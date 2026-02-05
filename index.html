@@ -19,7 +19,7 @@ h1 { font-size: 2rem; margin-top: 0; }
 h2 { font-size: 1.4rem; border-bottom: 2px solid var(--accent); padding-bottom: 0.25em; }
 h3 { font-size: 1.15rem; color: var(--accent-dark); }
 a { color: var(--accent); }
-.container { max-width: 800px; margin: 0 auto; padding: 2rem 1.5rem; }
+.container { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
 code { font-family: var(--mono); font-size: 0.88em; background: var(--code-bg); padding: 0.15em 0.4em; border-radius: 3px; }
 pre { background: var(--code-bg); padding: 1em 1.25em; border-radius: 6px; overflow-x: auto; font-family: var(--mono); font-size: 0.85em; line-height: 1.55; }
 pre code { background: none; padding: 0; }
@@ -579,89 +579,73 @@ dd { margin-left: 1.5em; margin-bottom: 0.5em; }
   Every VCL expression has a direct structural correspondence to <code>ValueSet.compose</code>.
   This section defines the mapping.
 </p>
+<p>
+  The examples below show VCL expressions without explicit system scoping for brevity.
+  The code system is provided by context &mdash; for instance, by the <code>system</code> element
+  in a <code>ValueSet.compose.include</code>. When used in
+  <a href="#implicit-uris">implicit ValueSet URIs</a> or as nested VCL URL references,
+  the system must be included explicitly via the <code>(systemUri)(...)</code> prefix.
+</p>
 
 <h3>Code literal</h3>
-<div class="side-by-side">
-  <div><h4>VCL</h4><pre><code>161</code></pre></div>
-  <div><h4>compose</h4><pre><code>{"include": [{
-  "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
-  "concept": [{"code": "161"}]
-}]}</code></pre></div>
-</div>
+<p><code>161</code> &rarr;</p>
+<pre><code data-vcl-compose="161"></code></pre>
 
 <h3>Single filter</h3>
-<div class="side-by-side">
-  <div><h4>VCL</h4><pre><code>has_ingredient = 161</code></pre></div>
-  <div><h4>compose</h4><pre><code data-vcl-compose="has_ingredient=161"></code></pre></div>
-</div>
+<p><code>has_ingredient = 161</code> &rarr;</p>
+<pre><code data-vcl-compose="has_ingredient=161"></code></pre>
 
 <h3>Conjunction (AND)</h3>
 <p>Multiple filters within a conjunction map to multiple <code>filter</code> entries
-  in a <strong>single</strong> <code>include</code>:</p>
-<div class="side-by-side">
-  <div><h4>VCL</h4><pre><code>has_ingredient=161,
-has_dose_form=317541</code></pre></div>
-  <div><h4>compose</h4><pre><code data-vcl-compose="has_ingredient=161,has_dose_form=317541"></code></pre></div>
-</div>
+  in a <strong>single</strong> <code>include</code>.</p>
+<p><code>has_ingredient=161, has_dose_form=317541</code> &rarr;</p>
+<pre><code data-vcl-compose="has_ingredient=161,has_dose_form=317541"></code></pre>
 
 <h3>Disjunction (OR)</h3>
-<p>Each operand in a disjunction maps to a <strong>separate</strong> <code>include</code>:</p>
-<div class="side-by-side">
-  <div><h4>VCL</h4><pre><code>has_ingredient=161;
-has_ingredient=5640</code></pre></div>
-  <div><h4>compose</h4><pre><code data-vcl-compose="has_ingredient=161;has_ingredient=5640"></code></pre></div>
-</div>
+<p>Each operand in a disjunction maps to a <strong>separate</strong> <code>include</code>.</p>
+<p><code>has_ingredient=161; has_ingredient=5640</code> &rarr;</p>
+<pre><code data-vcl-compose="has_ingredient=161;has_ingredient=5640"></code></pre>
 
 <h3>Exclusion</h3>
-<p>The left side maps to <code>include</code>, the right side to <code>exclude</code>:</p>
-<div class="side-by-side">
-  <div><h4>VCL</h4><pre><code>(has_ingredient=161) -
-(has_ingredient=5489)</code></pre></div>
-  <div><h4>compose</h4><pre><code data-vcl-compose="(has_ingredient=161)-(has_ingredient=5489)"></code></pre></div>
-</div>
+<p>The left side maps to <code>include</code>, the right side to <code>exclude</code>.</p>
+<p><code>(has_ingredient=161) - (has_ingredient=5489)</code> &rarr;</p>
+<pre><code data-vcl-compose="(has_ingredient=161)-(has_ingredient=5489)"></code></pre>
 
 <h3>System scoping</h3>
-<p>The system URI prefix maps to the <code>system</code> element in each <code>include</code>/<code>exclude</code>:</p>
-<div class="side-by-side">
-  <div><h4>VCL</h4><pre><code>(http://loinc.org)(SCALE_TYP=Doc);
-(http://snomed.info/sct)(concept&lt;&lt;404684003)</code></pre></div>
-  <div><h4>compose</h4><pre><code data-vcl-compose="(http://loinc.org)(SCALE_TYP=Doc);(http://snomed.info/sct)(concept<<404684003)"></code></pre></div>
-</div>
+<p>The system URI prefix maps to the <code>system</code> element in each <code>include</code>/<code>exclude</code>.</p>
+<p><code>(http://loinc.org)(SCALE_TYP=Doc); (http://snomed.info/sct)(concept&lt;&lt;404684003)</code> &rarr;</p>
+<pre><code data-vcl-compose="(http://loinc.org)(SCALE_TYP=Doc);(http://snomed.info/sct)(concept<<404684003)"></code></pre>
 
 <h3>ValueSet include</h3>
-<div class="side-by-side">
-  <div><h4>VCL</h4><pre><code>^http://hl7.org/fhir/ValueSet/payeetype</code></pre></div>
-  <div><h4>compose</h4><pre><code data-vcl-compose="^http://hl7.org/fhir/ValueSet/payeetype"></code></pre></div>
-</div>
+<p><code>^http://hl7.org/fhir/ValueSet/payeetype</code> &rarr;</p>
+<pre><code data-vcl-compose="^http://hl7.org/fhir/ValueSet/payeetype"></code></pre>
 
 <h3>The "of" operator (single hop)</h3>
-<div class="side-by-side">
-  <div><h4>VCL</h4><pre><code>104906 . has_tradename</code></pre></div>
-  <div><h4>compose</h4><pre><code data-vcl-compose="104906.has_tradename"></code></pre></div>
-</div>
+<p><code>104906.has_tradename</code> &rarr;</p>
+<pre><code data-vcl-compose="104906.has_tradename"></code></pre>
 
 <h3>The "of" operator (chained multi-hop)</h3>
 <p>When an <code>of</code> operator has a complex inner expression, the compose output references
 a separate ValueSet via a <strong>VCL URL</strong>. The inner expression becomes its own ValueSet,
 identified by <code>http://fhir.org/VCL?v1=(system)(expression)</code>.</p>
-<div class="side-by-side">
-  <div><h4>VCL</h4><pre><code>{104906 . has_tradename} . has_ingredient</code></pre></div>
-  <div><h4>compose</h4><pre><code data-vcl-compose="{104906.has_tradename}.has_ingredient"></code></pre></div>
-</div>
+<p><code>{104906.has_tradename}.has_ingredient</code> &rarr;</p>
+<pre><code data-vcl-compose="{104906.has_tradename}.has_ingredient"></code></pre>
 
 <h3>Nested filter list (in with filter list)</h3>
 <p>Similarly, <code>in</code> or <code>not-in</code> with a filter list emits a VCL URL reference
 to a separate ValueSet containing the nested expression.</p>
-<div class="side-by-side">
-  <div><h4>VCL</h4><pre><code>consists_of ^ {has_ingredient = 161}</code></pre></div>
-  <div><h4>compose</h4><pre><code data-vcl-compose="consists_of^{has_ingredient=161}"></code></pre></div>
-</div>
+<p><code>consists_of ^ {has_ingredient = 161}</code> &rarr;</p>
+<pre><code data-vcl-compose="consists_of^{has_ingredient=161}"></code></pre>
 <div class="note">
-  Complex nested expressions in <code>in</code>, <code>not-in</code>, and chained <code>of</code>
-  are represented as references to separate ValueSets identified by VCL URLs
-  (<code>http://fhir.org/VCL?v1=(system)(expression)</code>). A VCL-aware terminology server
-  resolves these URLs by parsing and evaluating the embedded VCL expression. This approach
-  keeps each <code>ValueSet.compose</code> structure flat and compatible with all FHIR versions.
+  <strong>FHIR version notes:</strong> The <code>of</code> filter operator is introduced in
+  FHIR R6. In earlier FHIR versions, <code>of</code> must be represented as an extension on
+  the <code>filter</code> element. Similarly, R6 extends <code>in</code> and <code>not-in</code>
+  to accept nested filter lists as values; pre-R6 implementations require extensions for this.
+  <br><br>
+  Complex nested expressions (chained <code>of</code>, <code>in</code>/<code>not-in</code> with
+  filter lists) are represented as references to separate ValueSets identified by VCL URLs
+  (<code>http://fhir.org/VCL?v1=(system)(expression)</code>). This keeps each
+  <code>ValueSet.compose</code> flat &mdash; filter values are always strings, never nested objects.
 </div>
 </section>
 
