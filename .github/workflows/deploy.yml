@@ -18,7 +18,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
-      - run: bun install --no-save
       - run: bash build.sh
       - uses: actions/upload-pages-artifact@v3
         with:
