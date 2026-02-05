@@ -232,6 +232,18 @@ document.querySelectorAll<HTMLElement>('[data-vcl-compose]').forEach(el => {
   }
 });
 
+// Validate and wire up clickable examples in operator reference table
+document.querySelectorAll<HTMLElement>('.vcl-try').forEach(el => {
+  const expr = el.dataset.expr!;
+  try {
+    parseVCL(expr);
+    el.addEventListener('click', () => tryVCL(expr));
+  } catch (e: any) {
+    el.style.color = 'red';
+    el.title = `Parse error: ${e.message}`;
+  }
+});
+
 // Expose functions globally for onclick handlers in HTML
 (window as any).tryVCL = tryVCL;
 (window as any).tryExample = tryExample;

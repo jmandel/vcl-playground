@@ -107,6 +107,8 @@ td code { white-space: nowrap; }
 #results-table tr:hover { background: var(--accent-light); }
 #results-table .code-cell { font-family: var(--mono); }
 #results-table tbody tr { cursor: pointer; }
+.vcl-try { cursor: pointer; color: var(--accent); border-bottom: 1px dashed var(--accent); }
+.vcl-try:hover { background: var(--accent-light); }
 .prop-overlay {
   position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,0.3);
   display: flex; align-items: center; justify-content: center;
@@ -500,18 +502,18 @@ nav a:hover { color: var(--accent); }
 <h2>Operator Reference</h2>
 <table>
   <tr><th>FHIR Op</th><th>VCL</th><th>Pattern</th><th>Example</th><th>Meaning</th></tr>
-  <tr><td>=</td><td><code>=</code></td><td><code>prop=val</code></td><td><code>has_ingredient=161</code></td><td>Property equals value</td></tr>
-  <tr><td>in</td><td><code>^</code></td><td><code>prop^{...}</code></td><td><code>has_ingredient^{161,5640}</code></td><td>Property value in set</td></tr>
-  <tr><td>not-in</td><td><code>~^</code></td><td><code>prop~^{...}</code></td><td><code>has_ingredient~^{5489}</code></td><td>Property value not in set</td></tr>
-  <tr><td>exists</td><td><code>?</code></td><td><code>prop?true</code></td><td><code>has_tradename?true</code></td><td>Property has any value</td></tr>
-  <tr><td>regex</td><td><code>/</code></td><td><code>prop/"pat"</code></td><td><code>RXN_STRENGTH/".*500.*"</code></td><td>Property matches regex</td></tr>
-  <tr><td>is-a</td><td><code>&lt;&lt;</code></td><td><code>prop&lt;&lt;code</code></td><td><code>concept&lt;&lt;161</code></td><td>Descendant or self</td></tr>
-  <tr><td>descendent-of</td><td><code>&lt;</code></td><td><code>prop&lt;code</code></td><td><code>concept&lt;161</code></td><td>Strict descendant</td></tr>
-  <tr><td>child-of</td><td><code>&lt;!</code></td><td><code>prop&lt;!code</code></td><td><code>concept&lt;!161</code></td><td>Direct child only</td></tr>
-  <tr><td>is-not-a</td><td><code>~&lt;&lt;</code></td><td><code>prop~&lt;&lt;code</code></td><td><code>concept~&lt;&lt;161</code></td><td>NOT descendant or self</td></tr>
-  <tr><td>generalizes</td><td><code>&gt;&gt;</code></td><td><code>prop&gt;&gt;code</code></td><td><code>concept&gt;&gt;104906</code></td><td>Ancestor or self</td></tr>
-  <tr><td>descendent-leaf</td><td><code>!!&lt;</code></td><td><code>prop!!&lt;code</code></td><td><code>concept!!&lt;161</code></td><td>Leaf descendants</td></tr>
-  <tr><td>of</td><td><code>.</code></td><td><code>val.prop</code></td><td><code>104906.has_tradename</code></td><td>Navigate property from value</td></tr>
+  <tr><td>=</td><td><code>=</code></td><td><code>prop=val</code></td><td><code class="vcl-try" data-expr="has_ingredient=161">has_ingredient=161</code></td><td>Property equals value</td></tr>
+  <tr><td>in</td><td><code>^</code></td><td><code>prop^{...}</code></td><td><code class="vcl-try" data-expr="has_ingredient^{161,5640,1191}">has_ingredient^{161,5640,1191}</code></td><td>Property value in set</td></tr>
+  <tr><td>not-in</td><td><code>~^</code></td><td><code>prop~^{...}</code></td><td><code class="vcl-try" data-expr="has_ingredient~^{5489}">has_ingredient~^{5489}</code></td><td>Property value not in set</td></tr>
+  <tr><td>exists</td><td><code>?</code></td><td><code>prop?true</code></td><td><code class="vcl-try" data-expr="has_tradename?true">has_tradename?true</code></td><td>Property has any value</td></tr>
+  <tr><td>regex</td><td><code>/</code></td><td><code>prop/"pat"</code></td><td><code class="vcl-try" data-expr='RXN_STRENGTH/".*500.*"'>RXN_STRENGTH/".*500.*"</code></td><td>Property matches regex</td></tr>
+  <tr><td>is-a</td><td><code>&lt;&lt;</code></td><td><code>prop&lt;&lt;code</code></td><td><code class="vcl-try" data-expr="concept&lt;&lt;161">concept&lt;&lt;161</code></td><td>Descendant or self</td></tr>
+  <tr><td>descendent-of</td><td><code>&lt;</code></td><td><code>prop&lt;code</code></td><td><code class="vcl-try" data-expr="concept&lt;161">concept&lt;161</code></td><td>Strict descendant</td></tr>
+  <tr><td>child-of</td><td><code>&lt;!</code></td><td><code>prop&lt;!code</code></td><td><code class="vcl-try" data-expr="concept&lt;!161">concept&lt;!161</code></td><td>Direct child only</td></tr>
+  <tr><td>is-not-a</td><td><code>~&lt;&lt;</code></td><td><code>prop~&lt;&lt;code</code></td><td><code class="vcl-try" data-expr="concept~&lt;&lt;161">concept~&lt;&lt;161</code></td><td>NOT descendant or self</td></tr>
+  <tr><td>generalizes</td><td><code>&gt;&gt;</code></td><td><code>prop&gt;&gt;code</code></td><td><code class="vcl-try" data-expr="concept&gt;&gt;104906">concept&gt;&gt;104906</code></td><td>Ancestor or self</td></tr>
+  <tr><td>descendent-leaf</td><td><code>!!&lt;</code></td><td><code>prop!!&lt;code</code></td><td><code class="vcl-try" data-expr="concept!!&lt;161">concept!!&lt;161</code></td><td>Leaf descendants</td></tr>
+  <tr><td>of</td><td><code>.</code></td><td><code>val.prop</code></td><td><code class="vcl-try" data-expr="104906.has_tradename">104906.has_tradename</code></td><td>Navigate property from value</td></tr>
 </table>
 <p>Set operators: <code>,</code> (AND/intersection), <code>;</code> (OR/union), <code>-</code> (exclusion/minus).</p>
 <p>Grouping: <code>(</code>...<code>)</code> for sub-expressions, <code>{</code>...<code>}</code> for nested filter lists and code lists.</p>
