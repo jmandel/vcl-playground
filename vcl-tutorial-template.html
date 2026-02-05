@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VCL: ValueSet Compose Language — Interactive Tutorial</title>
+<style>
+:root {
+  --bg: #fafafa; --fg: #1a1a2e; --muted: #64748b; --border: #e2e8f0;
+  --accent: #2563eb; --accent-light: #dbeafe; --accent-dark: #1e40af;
+  --code-bg: #f1f5f9;
+  --success: #16a34a; --error: #dc2626; --warn: #d97706;
+  --in-color: #7c3aed; --df-color: #0891b2; --scdc-color: #059669;
+  --scd-color: #2563eb; --sbd-color: #db2777; --bn-color: #e11d48;
+  --sbdc-color: #be185d; --min-color: #ea580c; --pin-color: #9333ea;
+  --scdf-color: #0d9488;
+  --font: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+body { font-family: var(--font); color: var(--fg); background: var(--bg); margin: 0; line-height: 1.65; font-size: 16px; }
+h1, h2, h3, h4 { line-height: 1.25; margin-top: 2em; margin-bottom: 0.5em; }
+h1 { font-size: 2.25rem; margin-top: 0; }
+h2 { font-size: 1.5rem; border-bottom: 2px solid var(--accent); padding-bottom: 0.25em; }
+h3 { font-size: 1.2rem; color: var(--accent-dark); }
+a { color: var(--accent); }
+.container { max-width: 1600px; margin: 0 auto; padding: 2rem 1.5rem; }
+code { font-family: var(--mono); font-size: 0.9em; background: var(--code-bg); padding: 0.15em 0.4em; border-radius: 4px; }
+pre { background: var(--code-bg); padding: 1em; border-radius: 8px; overflow-x: auto; font-family: var(--mono); font-size: 0.85em; line-height: 1.5; }
+pre code { background: none; padding: 0; }
+
+/* TTY badges */
+.tty { display: inline-block; font-family: var(--mono); font-size: 0.7em; font-weight: 700;
+  padding: 0.1em 0.5em; border-radius: 4px; color: white; vertical-align: middle; }
+.tty-IN { background: var(--in-color); } .tty-DF { background: var(--df-color); }
+.tty-SCDC { background: var(--scdc-color); } .tty-SCD { background: var(--scd-color); }
+.tty-SBD { background: var(--sbd-color); } .tty-BN { background: var(--bn-color); }
+.tty-SBDC { background: var(--sbdc-color); } .tty-MIN { background: var(--min-color); }
+.tty-PIN { background: var(--pin-color); } .tty-SCDF { background: var(--scdf-color); }
+
+/* Step blocks */
+.step { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 1.25em; margin: 1em 0; }
+.step h3 { margin-top: 0; }
+.step .try-it { margin-top: 0.75em; }
+.try-btn { display: inline-block; background: var(--accent); color: white; border: none; font-family: var(--mono);
+  font-size: 0.85em; padding: 0.35em 0.9em; border-radius: 4px; cursor: pointer; text-decoration: none; }
+.try-btn:hover { background: var(--accent-dark); }
+
+/* Operator table */
+table { width: 100%; border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+th, td { padding: 0.5em 0.75em; text-align: left; border-bottom: 1px solid var(--border); }
+th { background: var(--code-bg); font-weight: 600; }
+td code { white-space: nowrap; }
+
+/* Side-by-side */
+.side-by-side { display: grid; grid-template-columns: 1fr 1fr; gap: 1em; margin: 1em 0; }
+.side-by-side > div { background: var(--code-bg); border-radius: 8px; padding: 1em; }
+.side-by-side h4 { margin: 0 0 0.5em; font-size: 0.85em; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+@media (max-width: 700px) { .side-by-side { grid-template-columns: 1fr; } }
+
+/* Concept model diagram */
+.model-diagram { display: flex; flex-wrap: wrap; gap: 0.5em; align-items: center; justify-content: center;
+  background: white; border: 1px solid var(--border); border-radius: 8px; padding: 1.5em; margin: 1em 0; font-size: 0.85em; }
+.model-node { padding: 0.5em 0.75em; border-radius: 6px; text-align: center; border: 2px solid; min-width: 120px; }
+.model-arrow { color: var(--muted); font-family: var(--mono); font-size: 0.8em; text-align: center; }
+
+/* ========== TWO-COLUMN LAYOUT ========== */
+@media (min-width: 1100px) {
+  #page-layout { display: flex; gap: 2rem; }
+  #content-col { flex: 3; min-width: 0; }
+  #playground-col { flex: 2; min-width: 380px; max-width: 560px; position: sticky; top: 40px; align-self: flex-start;
+    height: calc(100vh - 50px); overflow-y: auto; border-left: 1px solid var(--border); padding: 1rem 1.5rem; }
+  #playground-col h2 { margin-top: 0; font-size: 1.2rem; }
+}
+@media (max-width: 1099px) {
+  #playground-col { border-top: 1px solid var(--border); padding: 1.5rem; margin-top: 2em; }
+}
+
+/* ========== PLAYGROUND (light theme) ========== */
+#playground-col { background: var(--bg); color: var(--fg); }
+#playground-input-wrap { position: relative; margin: 0.75em 0; background: white; border: 2px solid var(--border); border-radius: 8px; }
+#playground-input-wrap:focus-within { border-color: var(--accent); }
+#playground-system-prefix { display: block; font-family: var(--mono); font-size: 0.78em; color: var(--muted);
+  padding: 0.5em 0.75em 0; user-select: none; }
+#playground-input { width: 100%; font-family: var(--mono); font-size: 1em; padding: 0.4em 0.75em 0.6em;
+  background: transparent; color: var(--fg); border: none; outline: none; }
+#playground-error { color: var(--error); font-family: var(--mono); font-size: 0.8em; margin: 0.4em 0; min-height: 1.2em; }
+#playground-info { color: var(--muted); font-size: 0.8em; margin: 0.25em 0; min-height: 1.2em; }
+
+#examples-bar { display: flex; flex-wrap: wrap; gap: 0.3em; margin: 0.5em 0; }
+.example-btn { background: var(--code-bg); color: var(--accent); border: 1px solid var(--border); font-family: var(--mono);
+  font-size: 0.72em; padding: 0.25em 0.5em; border-radius: 4px; cursor: pointer; white-space: nowrap; }
+.example-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+
+#results-area { margin-top: 0.75em; }
+#results-table-wrap { max-height: 50vh; overflow-y: auto; border-radius: 8px; border: 1px solid var(--border); }
+#results-table { width: 100%; border-collapse: collapse; font-size: 0.8em; }
+#results-table th { background: var(--code-bg); color: var(--muted); padding: 0.4em 0.6em; position: sticky; top: 0; text-align: left; }
+#results-table td { padding: 0.35em 0.6em; border-bottom: 1px solid var(--border); }
+#results-table tr:hover { background: var(--accent-light); }
+#results-table .code-cell { font-family: var(--mono); cursor: pointer; color: var(--accent); }
+#results-table .code-cell:hover { text-decoration: underline; }
+#results-count { color: var(--muted); font-size: 0.8em; margin: 0.4em 0; }
+
+/* Tabs in playground */
+.pg-tabs { display: flex; gap: 0; margin-top: 0.75em; border-bottom: 2px solid var(--border); }
+.pg-tab { background: none; color: var(--muted); border: none; font-family: var(--font); font-size: 0.8em;
+  padding: 0.4em 0.75em; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+.pg-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.pg-panel { display: none; padding: 0.75em 0; }
+.pg-panel.active { display: block; }
+#compose-json { background: var(--code-bg); padding: 0.75em; border-radius: 8px; font-family: var(--mono);
+  font-size: 0.75em; overflow-x: auto; white-space: pre; color: var(--fg); max-height: 50vh; overflow-y: auto; }
+#parse-tree { background: var(--code-bg); padding: 0.75em; border-radius: 8px; font-family: var(--mono);
+  font-size: 0.75em; overflow-x: auto; white-space: pre; color: var(--fg); max-height: 50vh; overflow-y: auto; }
+
+/* Nav */
+nav { background: white; border-bottom: 1px solid var(--border); padding: 0.5em 1.5em; position: sticky; top: 0; z-index: 100;
+  display: flex; gap: 1.5em; flex-wrap: wrap; font-size: 0.85em; }
+nav a { text-decoration: none; color: var(--muted); padding: 0.25em 0; }
+nav a:hover { color: var(--accent); }
+
+/* Concept detail popover */
+.concept-detail { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 1em;
+  margin: 1em 0; font-size: 0.9em; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.concept-detail h4 { margin: 0 0 0.5em; }
+.concept-detail table { font-size: 0.85em; }
+
+/* Grammar section */
+.grammar-block { background: var(--code-bg); border-radius: 8px; padding: 1em; font-family: var(--mono);
+  font-size: 0.8em; line-height: 1.6; overflow-x: auto; white-space: pre; }
+.grammar-block .kw { color: #7c3aed; font-weight: 600; }
+.grammar-block .rule { color: #2563eb; }
+.grammar-block .lit { color: #059669; }
+.grammar-block .comment { color: #94a3b8; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="vcl-spec.html" style="color: var(--accent);">&larr; VCL Spec</a>
+  <a href="#model">Mental Model</a>
+  <a href="#building-blocks">Building Blocks</a>
+  <a href="#worked-examples">Worked Examples</a>
+  <a href="#operators">Operators</a>
+  <a href="#compose-mapping">VCL &harr; Compose</a>
+</nav>
+
+<div class="container">
+<div id="page-layout">
+<div id="content-col">
+
+<!-- ============================== INTRO ============================== -->
+<section id="intro">
+<h1>VCL Interactive Tutorial</h1>
+<p>
+  This tutorial walks through VCL using a live, queryable subset of RxNorm (2,300+ pain-management
+  drug concepts). Type expressions, see results, and build intuition for how VCL works.
+</p>
+<p>
+  For formal definitions, operator semantics, and the mapping to <code>ValueSet.compose</code>,
+  see the <a href="vcl-spec.html">VCL Specification</a>.
+</p>
+</section>
+
+<!-- ============================== MENTAL MODEL ============================== -->
+<section id="model">
+<h2>The Mental Model</h2>
+<p>
+  A code system is a <strong>property graph</strong>. It contains <em>concepts</em> (codes), and each concept
+  has <em>properties</em> whose values may be other concepts or literal strings. VCL queries this graph.
+</p>
+<p>
+  Consider RxNorm. It organizes drugs into layers &mdash; from raw ingredients up to branded products:
+</p>
+
+<div class="model-diagram" style="display: block; overflow-x: auto;">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 268" style="max-width:880px;width:100%;height:auto;">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,1 L9,5 L0,9 Z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+  <style>
+    text { font-family: system-ui, -apple-system, sans-serif; }
+    .b  { font: bold 10px system-ui; fill: white; }
+    .lb { font: 600 13px system-ui; fill: #1e293b; }
+    .ex { font: 12px system-ui; fill: #64748b; text-anchor: middle; }
+    .cd { font: 11px ui-monospace, monospace; fill: #94a3b8; text-anchor: middle; }
+    .el { font: 11px ui-monospace, monospace; fill: #475569; text-anchor: middle; }
+    .ln { stroke: #cbd5e1; stroke-width: 1.5; fill: none; }
+  </style>
+
+  <!-- ═══ TOP ROW: IN (x=140), DF (x=440), BN (x=730) ═══ -->
+
+  <rect x="99" y="14" width="24" height="17" rx="3" fill="#7c3aed"/>
+  <text x="111" y="27" text-anchor="middle" class="b">IN</text>
+  <text x="128" y="27" class="lb">Ingredient</text>
+  <text x="140" y="45" class="ex">e.g. acetaminophen</text>
+  <text x="140" y="60" class="cd">(161)</text>
+
+  <rect x="398" y="14" width="24" height="17" rx="3" fill="#0891b2"/>
+  <text x="410" y="27" text-anchor="middle" class="b">DF</text>
+  <text x="428" y="27" class="lb">Dose Form</text>
+  <text x="440" y="45" class="ex">e.g. Oral Tablet</text>
+  <text x="440" y="60" class="cd">(317541)</text>
+
+  <rect x="688" y="14" width="26" height="17" rx="3" fill="#e11d48"/>
+  <text x="701" y="27" text-anchor="middle" class="b">BN</text>
+  <text x="720" y="27" class="lb">Brand Name</text>
+  <text x="730" y="45" class="ex">e.g. Tylenol</text>
+  <text x="730" y="60" class="cd">(202433)</text>
+
+  <!-- ═══ VERTICAL ARROWS (pointing UP: bottom→top) ═══ -->
+
+  <line x1="140" y1="170" x2="140" y2="68" class="ln" marker-end="url(#arr)"/>
+  <rect x="86" y="111" width="108" height="15" rx="2" fill="white"/>
+  <text x="140" y="122" class="el">has_ingredient</text>
+
+  <line x1="440" y1="170" x2="440" y2="68" class="ln" marker-end="url(#arr)"/>
+  <rect x="384" y="111" width="112" height="15" rx="2" fill="white"/>
+  <text x="440" y="122" class="el">has_dose_form</text>
+
+  <line x1="730" y1="170" x2="730" y2="68" class="ln" marker-end="url(#arr)"/>
+  <rect x="676" y="105" width="108" height="15" rx="2" fill="white"/>
+  <text x="730" y="116" class="el">has_ingredient</text>
+  <rect x="706" y="121" width="48" height="15" rx="2" fill="white"/>
+  <text x="730" y="132" class="el">(on SBD)</text>
+
+  <!-- ═══ BOTTOM ROW: SCDC (x=140), SCD (x=440), SBD (x=730) ═══ -->
+
+  <rect x="65" y="170" width="40" height="17" rx="3" fill="#059669"/>
+  <text x="85" y="183" text-anchor="middle" class="b">SCDC</text>
+  <text x="111" y="183" class="lb">Drug Component</text>
+  <text x="140" y="202" class="ex">acetaminophen 500 MG</text>
+  <text x="140" y="217" class="cd">(315266)</text>
+
+  <rect x="375" y="170" width="32" height="17" rx="3" fill="#2563eb"/>
+  <text x="391" y="183" text-anchor="middle" class="b">SCD</text>
+  <text x="413" y="183" class="lb">Clinical Drug</text>
+  <text x="440" y="202" class="ex">acetaminophen 500 MG Oral Tablet</text>
+  <text x="440" y="217" class="cd">(198440)</text>
+
+  <rect x="668" y="170" width="32" height="17" rx="3" fill="#db2777"/>
+  <text x="684" y="183" text-anchor="middle" class="b">SBD</text>
+  <text x="706" y="183" class="lb">Branded Drug</text>
+  <text x="730" y="202" class="ex">acetaminophen 500 MG Oral Tablet [Tylenol]</text>
+  <text x="730" y="217" class="cd">(209459)</text>
+
+  <!-- ═══ HORIZONTAL ARROWS ═══ -->
+  <!-- SCD → SCDC (consists_of, pointing LEFT) -->
+  <line x1="372" y1="178" x2="224" y2="178" class="ln" marker-end="url(#arr)"/>
+  <text x="298" y="172" class="el">consists_of</text>
+
+  <!-- SCD → SBD (has_tradename, pointing RIGHT) -->
+  <line x1="508" y1="178" x2="665" y2="178" class="ln" marker-end="url(#arr)"/>
+  <text x="586" y="172" class="el">has_tradename</text>
+
+  <!-- ═══ FOOTER ═══ -->
+  <text x="440" y="248" class="ex" font-size="11" fill="#94a3b8">Every arrow is a queryable VCL property. Reverses (ingredient_of, constitutes, tradename_of) also work.</text>
+</svg>
+</div>
+
+<p>
+  Every arrow in this graph is a <strong>property</strong> you can query with VCL. The key relationships are:
+</p>
+<table>
+  <tr><th>Property</th><th>From</th><th>To</th><th>Meaning</th></tr>
+  <tr><td><code>has_ingredient</code></td><td>SCDC</td><td>IN</td><td>What ingredient is in this component?</td></tr>
+  <tr><td><code>consists_of</code></td><td>SCD</td><td>SCDC</td><td>What components make up this drug?</td></tr>
+  <tr><td><code>has_dose_form</code></td><td>SCD</td><td>DF</td><td>What form is this drug (tablet, capsule...)?</td></tr>
+  <tr><td><code>has_tradename</code></td><td>SCD</td><td>SBD</td><td>What branded versions exist?</td></tr>
+  <tr><td><code>has_ingredients</code></td><td>SCD</td><td>MIN</td><td>Multi-ingredient grouping</td></tr>
+  <tr><td><code>tradename_of</code></td><td>SBD</td><td>SCD</td><td>What generic drug is this a brand of?</td></tr>
+</table>
+<p>
+  Each relationship also has a <strong>reverse</strong>: <code>ingredient_of</code> is the reverse of <code>has_ingredient</code>,
+  <code>constitutes</code> reverses <code>consists_of</code>, etc. Both directions are queryable.
+</p>
+<p>
+  Concepts also have <strong>literal properties</strong> (string values, not concept references):
+  <code>TTY</code> (term type like SCD, SBD), <code>RXN_STRENGTH</code>, <code>RXTERM_FORM</code>, etc.
+</p>
+</section>
+
+<!-- ============================== BUILDING BLOCKS ============================== -->
+<section id="building-blocks">
+<h2>VCL Building Blocks</h2>
+
+<div class="step">
+  <h3>Step 1: Codes</h3>
+  <p>The simplest VCL expression is a code literal. It selects exactly one concept.</p>
+  <pre><code>161</code></pre>
+  <p>This matches the single concept with code <code>161</code> &mdash; acetaminophen. If a code contains
+  special characters, quote it: <code>"161"</code> or <code>"J45.0"</code>.</p>
+  <div class="try-it"><button class="try-btn" onclick="tryVCL('161')">Try: 161</button>
+  <button class="try-btn" onclick="tryVCL('317541')">Try: 317541</button></div>
+</div>
+
+<div class="step">
+  <h3>Step 2: Filters &mdash; <code>property = value</code></h3>
+  <p>A filter selects all concepts where a property matches a value. The basic form is:</p>
+  <pre><code>has_ingredient = 161</code></pre>
+  <p>This means: <em>"all concepts whose <code>has_ingredient</code> property points to code 161 (acetaminophen)"</em>.
+  In RxNorm, these are the SCDCs &mdash; drug components like "acetaminophen 500 MG".</p>
+  <p>For literal (string) properties, the value is just a code too:</p>
+  <pre><code>TTY = SCD</code></pre>
+  <p>This matches all Semantic Clinical Drugs in the dataset.</p>
+  <div class="try-it">
+    <button class="try-btn" onclick="tryVCL('has_ingredient=161')">Try: has_ingredient=161</button>
+    <button class="try-btn" onclick="tryVCL('TTY=SCD')">Try: TTY=SCD</button>
+    <button class="try-btn" onclick="tryVCL('has_dose_form=317541')">Try: has_dose_form=317541</button>
+  </div>
+</div>
+
+<div class="step">
+  <h3>Step 3: The "of" operator &mdash; <code>value.property</code> (dot navigation)</h3>
+  <p>The dot <code>.</code> reverses the direction. Instead of "find things with this property", it says
+  "start at this code, follow this property outward":</p>
+  <pre><code>198440.has_tradename</code></pre>
+  <p>Start at acetaminophen 500 MG Oral Tablet (198440), follow <code>has_tradename</code> edges
+  &rarr; returns all branded versions of that drug.</p>
+  <p>Chain dots with curly braces for multi-hop traversal:</p>
+  <pre><code>{198440.has_tradename}.has_ingredient</code></pre>
+  <p>Start at an SCD &rarr; follow <code>has_tradename</code> to get SBDs &rarr; follow <code>has_ingredient</code>
+  to get the brand names associated with those branded drugs.</p>
+  <div class="try-it">
+    <button class="try-btn" onclick="tryVCL('198440.has_tradename')">Try: 198440.has_tradename</button>
+    <button class="try-btn" onclick="tryVCL('{198440.has_tradename}.has_ingredient')">Try: {198440.has_tradename}.has_ingredient</button>
+    <button class="try-btn" onclick="tryVCL('{198440.has_dose_form}.has_dose_form')">Try: {198440.has_dose_form}.has_dose_form</button>
+  </div>
+</div>
+
+<div class="step">
+  <h3>Step 4: AND and OR &mdash; <code>,</code> and <code>;</code></h3>
+  <p>Comma means <strong>AND</strong> (intersection): both conditions must hold.</p>
+  <pre><code>has_ingredient=161, has_dose_form=317541</code></pre>
+  <p><em>Concepts that have ingredient acetaminophen AND dose form Oral Tablet.</em></p>
+  <p>Semicolon means <strong>OR</strong> (union): either condition suffices.</p>
+  <pre><code>has_ingredient=161; has_ingredient=5640</code></pre>
+  <p><em>Concepts that have ingredient acetaminophen OR ibuprofen.</em></p>
+  <p>Use parentheses to group: <code>(A,B);(C,D)</code> means "(A and B) or (C and D)".</p>
+  <div class="try-it">
+    <button class="try-btn" onclick="tryVCL('has_ingredient=161,has_dose_form=317541')">Try: AND</button>
+    <button class="try-btn" onclick="tryVCL('has_ingredient=161;has_ingredient=5640')">Try: OR</button>
+  </div>
+</div>
+
+<div class="step">
+  <h3>Step 5: Nesting with <code>^</code> and <code>{...}</code></h3>
+  <p>The <code>^</code> (<code>in</code>) operator with a filter list <code>{...}</code> enables graph traversal through
+  intermediate nodes:</p>
+  <pre><code>consists_of^{has_ingredient=161}</code></pre>
+  <p>Read this as: <em>"concepts whose <code>consists_of</code> property points to something that matches
+  <code>has_ingredient=161</code>"</em>. In other words: SCDs that consist of a component containing acetaminophen.</p>
+  <p>Nesting can go deeper:</p>
+  <pre><code>consists_of^{has_ingredient=161}, has_dose_form=317541</code></pre>
+  <p><em>SCDs containing acetaminophen in Oral Tablet form.</em></p>
+  <div class="try-it">
+    <button class="try-btn" onclick="tryVCL('consists_of^{has_ingredient=161}')">Try: consists_of^{has_ingredient=161}</button>
+    <button class="try-btn" onclick="tryVCL('consists_of^{has_ingredient=161},has_dose_form=317541')">Try: + Oral Tablet</button>
+  </div>
+</div>
+
+<div class="step">
+  <h3>Step 6: Exclusion &mdash; <code>-</code></h3>
+  <p>The minus operator subtracts one set from another:</p>
+  <pre><code>(has_ingredient=161)-(has_ingredient=5489)</code></pre>
+  <p><em>Concepts containing acetaminophen but NOT hydrocodone.</em> Useful for excluding combination drugs.</p>
+  <div class="try-it">
+    <button class="try-btn" onclick="tryVCL('(has_ingredient=161)-(has_ingredient=5489)')">Try: acetaminophen minus hydrocodone</button>
+  </div>
+</div>
+
+<div class="step">
+  <h3>Step 7: System Scoping</h3>
+  <p>When combining multiple code systems, prefix each sub-expression with the system URI in parentheses:</p>
+  <pre><code>(http://www.nlm.nih.gov/research/umls/rxnorm)(has_ingredient=161)</code></pre>
+  <p>This tutorial's dataset is all RxNorm, so system scoping isn't needed here &mdash; but it's essential
+  when building multi-system ValueSets (e.g., LOINC + SNOMED + CPT in one expression).</p>
+</div>
+
+<div class="step">
+  <h3>Step 8: Code Lists and ValueSet Includes</h3>
+  <p>List multiple codes with semicolons (union) or curly braces (for <code>in</code> operator):</p>
+  <pre><code>has_ingredient^{161,5640,1191}</code></pre>
+  <p><em>Concepts whose ingredient is acetaminophen, ibuprofen, OR aspirin.</em></p>
+  <p>Include an entire ValueSet with <code>^</code>:</p>
+  <pre><code>^http://example.com/ValueSet/analgesics</code></pre>
+  <p><em>All codes that are members of the referenced ValueSet.</em></p>
+  <div class="try-it">
+    <button class="try-btn" onclick="tryVCL('has_ingredient^{161,5640,1191}')">Try: has_ingredient^{161,5640,1191}</button>
+  </div>
+</div>
+
+<div class="step">
+  <h3>Step 9: Regex and Exists</h3>
+  <p><code>/</code> applies a regex match to a property's value:</p>
+  <pre><code>display/".*ibuprofen.*Tablet.*"</code></pre>
+  <p><code>?</code> tests whether a property has any value at all:</p>
+  <pre><code>has_tradename?true</code></pre>
+  <p><em>Concepts that have at least one tradename (i.e., generic drugs with branded versions).</em></p>
+  <div class="try-it">
+    <button class="try-btn" onclick="tryVCL('has_tradename?true')">Try: has_tradename?true</button>
+    <button class="try-btn" onclick="tryVCL('RXN_STRENGTH/\".*500.*\"')">Try: RXN_STRENGTH regex</button>
+  </div>
+</div>
+
+</section>
+
+<!-- ============================== WORKED EXAMPLES ============================== -->
+<section id="worked-examples">
+<h2>Worked Examples</h2>
+
+<div class="step">
+  <h3>Example 1: All generic ibuprofen oral tablets</h3>
+  <p><strong>Question:</strong> "Give me all SCD (generic drug) codes for ibuprofen in oral tablet form."</p>
+  <p><strong>Approach:</strong> We need three conditions to intersect: TTY must be SCD, ingredient must be ibuprofen (5640),
+  and dose form must be Oral Tablet (317541).</p>
+  <pre><code>TTY=SCD, has_ingredient=5640, has_dose_form=317541</code></pre>
+  <p>The commas mean AND &mdash; all three filters must match on the same concept.</p>
+  <div class="try-it"><button class="try-btn" onclick="tryVCL('TTY=SCD,has_ingredient=5640,has_dose_form=317541')">Run this query</button></div>
+</div>
+
+<div class="step">
+  <h3>Example 2: All branded versions of acetaminophen 500 MG Oral Tablet</h3>
+  <p><strong>Question:</strong> "I know the generic drug acetaminophen 500 MG Oral Tablet (198440). What are its brand-name versions?"</p>
+  <p><strong>Approach:</strong> Navigate from the SCD via <code>has_tradename</code>:</p>
+  <pre><code>198440.has_tradename</code></pre>
+  <p>The dot starts at code 198440 and follows the <code>has_tradename</code> property outward, returning all SBDs.</p>
+  <div class="try-it"><button class="try-btn" onclick="tryVCL('198440.has_tradename')">Run this query</button></div>
+</div>
+
+<div class="step">
+  <h3>Example 3: All drugs containing acetaminophen but not hydrocodone</h3>
+  <p><strong>Question:</strong> "Find drugs with acetaminophen, excluding combination products with hydrocodone (opioid)."</p>
+  <p><strong>Approach:</strong> Use exclusion. Both sides query <code>has_ingredient</code>:</p>
+  <pre><code>(has_ingredient=161) - (has_ingredient=5489)</code></pre>
+  <p>The first group finds everything containing acetaminophen; the minus removes anything also containing hydrocodone.</p>
+  <div class="try-it"><button class="try-btn" onclick="tryVCL('(has_ingredient=161)-(has_ingredient=5489)')">Run this query</button></div>
+</div>
+
+<div class="step">
+  <h3>Example 4: Multi-ingredient drugs &mdash; which SCDs contain both aspirin and caffeine?</h3>
+  <p><strong>Question:</strong> "Find combination products with both aspirin and caffeine (like Excedrin)."</p>
+  <p><strong>Approach:</strong> Use nested filters with AND. We want SCDs that consist_of components with aspirin AND also consist_of components with caffeine:</p>
+  <pre><code>consists_of^{has_ingredient=1191}, consists_of^{has_ingredient=1886}</code></pre>
+  <div class="try-it"><button class="try-btn" onclick="tryVCL('consists_of^{has_ingredient=1191},consists_of^{has_ingredient=1886}')">Run this query</button></div>
+</div>
+
+<div class="step">
+  <h3>Example 5: What brand names exist for ibuprofen products?</h3>
+  <p><strong>Question:</strong> "List all the brand names (BN) associated with any ibuprofen product."</p>
+  <p><strong>Approach:</strong> Chain navigation: start at ibuprofen, go to SCDCs, then to SCDs, then to SBDs, then extract brand names:</p>
+  <pre><code>{({5640.ingredient_of}.constitutes).has_tradename}.has_ingredient</code></pre>
+  <p>Or more simply &mdash; since BN concepts have <code>tradename_of</code> pointing to IN:</p>
+  <pre><code>tradename_of=5640, TTY=BN</code></pre>
+  <div class="try-it">
+    <button class="try-btn" onclick="tryVCL('tradename_of=5640,TTY=BN')">Run: simple filter approach</button>
+  </div>
+</div>
+</section>
+
+<!-- ============================== OPERATORS ============================== -->
+<section id="operators">
+<h2>Operator Reference</h2>
+<table>
+  <tr><th>FHIR Op</th><th>VCL</th><th>Pattern</th><th>Example</th><th>Meaning</th></tr>
+  <tr><td>=</td><td><code>=</code></td><td><code>prop=val</code></td><td><code>has_ingredient=161</code></td><td>Property equals value</td></tr>
+  <tr><td>in</td><td><code>^</code></td><td><code>prop^{...}</code></td><td><code>has_ingredient^{161,5640}</code></td><td>Property value in set</td></tr>
+  <tr><td>not-in</td><td><code>~^</code></td><td><code>prop~^{...}</code></td><td><code>has_ingredient~^{5489}</code></td><td>Property value not in set</td></tr>
+  <tr><td>exists</td><td><code>?</code></td><td><code>prop?true</code></td><td><code>has_tradename?true</code></td><td>Property has any value</td></tr>
+  <tr><td>regex</td><td><code>/</code></td><td><code>prop/"pat"</code></td><td><code>RXN_STRENGTH/".*500.*"</code></td><td>Property matches regex</td></tr>
+  <tr><td>is-a</td><td><code>&lt;&lt;</code></td><td><code>prop&lt;&lt;code</code></td><td><code>concept&lt;&lt;161</code></td><td>Descendant or self</td></tr>
+  <tr><td>descendent-of</td><td><code>&lt;</code></td><td><code>prop&lt;code</code></td><td><code>concept&lt;161</code></td><td>Strict descendant</td></tr>
+  <tr><td>child-of</td><td><code>&lt;!</code></td><td><code>prop&lt;!code</code></td><td><code>concept&lt;!161</code></td><td>Direct child only</td></tr>
+  <tr><td>is-not-a</td><td><code>~&lt;&lt;</code></td><td><code>prop~&lt;&lt;code</code></td><td><code>concept~&lt;&lt;161</code></td><td>NOT descendant or self</td></tr>
+  <tr><td>generalizes</td><td><code>&gt;&gt;</code></td><td><code>prop&gt;&gt;code</code></td><td><code>concept&gt;&gt;198440</code></td><td>Ancestor or self</td></tr>
+  <tr><td>descendent-leaf</td><td><code>!!&lt;</code></td><td><code>prop!!&lt;code</code></td><td><code>concept!!&lt;161</code></td><td>Leaf descendants</td></tr>
+  <tr><td>of</td><td><code>.</code></td><td><code>val.prop</code></td><td><code>198440.has_tradename</code></td><td>Navigate property from value</td></tr>
+</table>
+<p>Set operators: <code>,</code> (AND/intersection), <code>;</code> (OR/union), <code>-</code> (exclusion/minus).</p>
+<p>Grouping: <code>(</code>...<code>)</code> for sub-expressions, <code>{</code>...<code>}</code> for nested filter lists and code lists.</p>
+</section>
+
+<!-- ============================== COMPOSE MAPPING ============================== -->
+<section id="compose-mapping">
+<h2>VCL &harr; ValueSet.compose</h2>
+<p>VCL maps directly to FHIR's <code>ValueSet.compose</code> structure. Here are side-by-side examples:</p>
+
+<h3>Simple filter</h3>
+<div class="side-by-side">
+  <div>
+    <h4>VCL</h4>
+    <pre><code>has_ingredient=161</code></pre>
+  </div>
+  <div>
+    <h4>ValueSet.compose</h4>
+    <pre><code>{
+  "include": [{
+    "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+    "filter": [{
+      "property": "has_ingredient",
+      "op": "=",
+      "value": "161"
+    }]
+  }]
+}</code></pre>
+  </div>
+</div>
+
+<h3>AND (conjunction) &mdash; multiple filters</h3>
+<div class="side-by-side">
+  <div>
+    <h4>VCL</h4>
+    <pre><code>has_ingredient=161, has_dose_form=317541</code></pre>
+  </div>
+  <div>
+    <h4>ValueSet.compose</h4>
+    <pre><code>{
+  "include": [{
+    "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+    "filter": [
+      { "property": "has_ingredient",
+        "op": "=", "value": "161" },
+      { "property": "has_dose_form",
+        "op": "=", "value": "317541" }
+    ]
+  }]
+}</code></pre>
+  </div>
+</div>
+
+<h3>OR (disjunction) &mdash; separate includes</h3>
+<div class="side-by-side">
+  <div>
+    <h4>VCL</h4>
+    <pre><code>has_ingredient=161; has_ingredient=5640</code></pre>
+  </div>
+  <div>
+    <h4>ValueSet.compose</h4>
+    <pre><code>{
+  "include": [
+    { "system": "...",
+      "filter": [{ "property": "has_ingredient",
+        "op": "=", "value": "161" }] },
+    { "system": "...",
+      "filter": [{ "property": "has_ingredient",
+        "op": "=", "value": "5640" }] }
+  ]
+}</code></pre>
+  </div>
+</div>
+
+<h3>Exclusion</h3>
+<div class="side-by-side">
+  <div>
+    <h4>VCL</h4>
+    <pre><code>(has_ingredient=161)-(has_ingredient=5489)</code></pre>
+  </div>
+  <div>
+    <h4>ValueSet.compose</h4>
+    <pre><code>{
+  "include": [{
+    "system": "...",
+    "filter": [{ "property": "has_ingredient",
+      "op": "=", "value": "161" }]
+  }],
+  "exclude": [{
+    "system": "...",
+    "filter": [{ "property": "has_ingredient",
+      "op": "=", "value": "5489" }]
+  }]
+}</code></pre>
+  </div>
+</div>
+</section>
+
+<!-- ============================== IMPLICIT URIs ============================== -->
+<section id="implicit-uris">
+<h2>Implicit ValueSet URIs</h2>
+<p>VCL expressions can be packaged as <strong>implicit ValueSet URIs</strong> that terminology servers
+can resolve directly with <code>$expand</code>:</p>
+<pre><code>http://fhir.org/VCL?v1=(http://www.nlm.nih.gov/research/umls/rxnorm)(has_ingredient%3D161%2Chas_dose_form%3D317541)</code></pre>
+<p>Structure:</p>
+<ul>
+  <li>Base: <code>http://fhir.org/VCL</code></li>
+  <li>Query: <code>?v1=[percent-encoded VCL expression]</code></li>
+  <li>The expression <strong>must</strong> include system scoping (the parenthesized URI prefix)</li>
+</ul>
+<p>Usage with <code>$expand</code>:</p>
+<pre><code>GET [tx-server]/ValueSet/$expand?url=http://fhir.org/VCL?v1=...</code></pre>
+<p>Servers decode the expression, parse it, evaluate it against the referenced code system, and return the expanded ValueSet.</p>
+</section>
+
+<!-- Grammar is in the spec page, not duplicated here -->
+
+</div><!-- /content-col -->
+
+<!-- ============================== PLAYGROUND (right column) ============================== -->
+<div id="playground-col">
+  <h2 id="playground">Playground</h2>
+
+  <div id="examples-bar">
+    <button class="example-btn" onclick="tryVCL('161')">161</button>
+    <button class="example-btn" onclick="tryVCL('has_ingredient=161')">has_ingredient=161</button>
+    <button class="example-btn" onclick="tryVCL('198440.has_tradename')">198440.has_tradename</button>
+    <button class="example-btn" onclick="tryVCL('TTY=SCD,has_ingredient=5640')">SCD + ibuprofen</button>
+    <button class="example-btn" onclick="tryVCL('consists_of^{has_ingredient=161}')">consists_of^{...}</button>
+    <button class="example-btn" onclick="tryVCL('(has_ingredient=161)-(has_ingredient=5489)')">exclusion</button>
+    <button class="example-btn" onclick="tryVCL('has_ingredient^{161,5640,1191}')">^{code list}</button>
+    <button class="example-btn" onclick="tryVCL('{198440.has_tradename}.has_ingredient')">chained nav</button>
+    <button class="example-btn" onclick="tryVCL('*')">*</button>
+  </div>
+
+  <div id="playground-input-wrap">
+    <span id="playground-system-prefix">(http://www.nlm.nih.gov/research/umls/rxnorm)</span>
+    <input id="playground-input" type="text" placeholder="Type a VCL expression..." spellcheck="false" autocomplete="off">
+  </div>
+  <div id="playground-error"></div>
+  <div id="playground-info"></div>
+
+  <div class="pg-tabs">
+    <button class="pg-tab active" onclick="showTab('results')">Results</button>
+    <button class="pg-tab" onclick="showTab('compose')">ValueSet.compose</button>
+    <button class="pg-tab" onclick="showTab('tree')">Parse Tree</button>
+  </div>
+
+  <div id="panel-results" class="pg-panel active">
+    <div id="results-count"></div>
+    <div id="results-table-wrap">
+      <table id="results-table">
+        <thead><tr><th>Code</th><th>Display</th><th>TTY</th></tr></thead>
+        <tbody id="results-body"></tbody>
+      </table>
+    </div>
+  </div>
+  <div id="panel-compose" class="pg-panel">
+    <div id="compose-json"></div>
+  </div>
+  <div id="panel-tree" class="pg-panel">
+    <div id="parse-tree"></div>
+  </div>
+</div><!-- /playground-col -->
+
+</div><!-- /page-layout -->
+</div><!-- /.container -->
+
+<!-- ============================== JAVASCRIPT ============================== -->
+<script>
+// Embedded RxNorm data (injected by build.sh)
+const RXNORM_DATA = "__RXNORM_DATA_PLACEHOLDER__";
+
+// ==================== DATA INDEX ====================
+const DB = (() => {
+  const d = RXNORM_DATA;
+  const byCode = new Map();
+  for (const c of d.concepts) byCode.set(c.code, c);
+
+  const edgesBySource = new Map();
+  const edgesByTarget = new Map();
+  for (const e of d.edges) {
+    if (!edgesBySource.has(e.source)) edgesBySource.set(e.source, []);
+    edgesBySource.get(e.source).push(e);
+    if (!edgesByTarget.has(e.target)) edgesByTarget.set(e.target, []);
+    edgesByTarget.get(e.target).push(e);
+  }
+
+  const literalsByCode = new Map();
+  for (const l of d.literals) {
+    if (!literalsByCode.has(l.code)) literalsByCode.set(l.code, []);
+    literalsByCode.get(l.code).push(l);
+  }
+
+  const allCodes = new Set(d.concepts.map(c => c.code));
+
+  return { byCode, edgesBySource, edgesByTarget, literalsByCode, allCodes, concepts: d.concepts };
+})();
+
+// ==================== TOKENIZER ====================
+const TT = {
+  DASH:'-', OPEN:'(', CLOSE:')', LCRLY:'{', RCRLY:'}', SEMI:';', COMMA:',', DOT:'.', STAR:'*',
+  EQ:'=', IS_A:'<<', IS_NOT_A:'~<<', DESC_OF:'<', REGEX:'/', IN:'^', NOT_IN:'~^',
+  GENERALIZES:'>>', CHILD_OF:'<!', DESC_LEAF:'!!<', EXISTS:'?',
+  URI:'URI', SCODE:'SCODE', QUOTED:'QUOTED', EOF:'EOF'
+};
+
+function tokenize(input) {
+  const tokens = [];
+  let i = 0;
+  while (i < input.length) {
+    // skip whitespace
+    if (input[i] === ' ' || input[i] === '\t') { i++; continue; }
+
+    const rest = input.substring(i);
+    let m;
+
+    // multi-char operators (longest match first)
+    if (rest.startsWith('~<<')) { tokens.push({type: TT.IS_NOT_A, value: '~<<', pos: i}); i += 3; continue; }
+    if (rest.startsWith('!!<')) { tokens.push({type: TT.DESC_LEAF, value: '!!<', pos: i}); i += 3; continue; }
+    if (rest.startsWith('~^'))  { tokens.push({type: TT.NOT_IN, value: '~^', pos: i}); i += 2; continue; }
+    if (rest.startsWith('<<'))  { tokens.push({type: TT.IS_A, value: '<<', pos: i}); i += 2; continue; }
+    if (rest.startsWith('>>'))  { tokens.push({type: TT.GENERALIZES, value: '>>', pos: i}); i += 2; continue; }
+    if (rest.startsWith('<!'))  { tokens.push({type: TT.CHILD_OF, value: '<!', pos: i}); i += 2; continue; }
+
+    // single-char operators
+    const singles = { '-': TT.DASH, '(': TT.OPEN, ')': TT.CLOSE, '{': TT.LCRLY, '}': TT.RCRLY,
+      ';': TT.SEMI, ',': TT.COMMA, '.': TT.DOT, '*': TT.STAR, '=': TT.EQ,
+      '<': TT.DESC_OF, '/': TT.REGEX, '^': TT.IN, '?': TT.EXISTS, '>': TT.GENERALIZES };
+    // Note: single > shouldn't happen in valid VCL but handle gracefully
+    if (singles[input[i]] && input[i] !== '>') {
+      tokens.push({type: singles[input[i]], value: input[i], pos: i});
+      i++; continue;
+    }
+
+    // Quoted value
+    if (input[i] === '"') {
+      let j = i + 1, val = '';
+      while (j < input.length && input[j] !== '"') {
+        if (input[j] === '\\' && j + 1 < input.length) { val += input[j+1]; j += 2; }
+        else { val += input[j]; j++; }
+      }
+      if (j >= input.length) throw new ParseError('Unterminated string', i);
+      tokens.push({type: TT.QUOTED, value: val, pos: i});
+      i = j + 1; continue;
+    }
+
+    // URI: [a-zA-Z]+:[a-zA-Z0-9?=:;&_%+-.@#$^!{}/]+
+    // Only match if we see letters followed by : and then URI chars, AND it looks like a real URI
+    // (has at least a slash or dot after the colon to distinguish from property names)
+    m = rest.match(/^([a-zA-Z]+:[a-zA-Z0-9?=:;&_%+\-.@#$^!{}/]+)/);
+    if (m && /[./]/.test(m[1].substring(m[1].indexOf(':') + 1))) {
+      tokens.push({type: TT.URI, value: m[1], pos: i});
+      i += m[1].length; continue;
+    }
+
+    // SCODE: [a-zA-Z0-9][-_a-zA-Z0-9]*
+    m = rest.match(/^([a-zA-Z0-9][-_a-zA-Z0-9]*)/);
+    if (m) {
+      tokens.push({type: TT.SCODE, value: m[1], pos: i});
+      i += m[1].length; continue;
+    }
+
+    throw new ParseError(`Unexpected character: '${input[i]}'`, i);
+  }
+  tokens.push({type: TT.EOF, value: '', pos: i});
+  return tokens;
+}
+
+// ==================== PARSER ====================
+class ParseError extends Error {
+  constructor(msg, pos) { super(msg); this.pos = pos; }
+}
+
+class Parser {
+  constructor(tokens) { this.tokens = tokens; this.pos = 0; }
+  peek() { return this.tokens[this.pos]; }
+  advance() { return this.tokens[this.pos++]; }
+  expect(type) {
+    const t = this.peek();
+    if (t.type !== type) throw new ParseError(`Expected ${type}, got ${t.type} '${t.value}'`, t.pos);
+    return this.advance();
+  }
+  match(type) {
+    if (this.peek().type === type) return this.advance();
+    return null;
+  }
+
+  parse() {
+    const ast = this.parseExpr();
+    this.expect(TT.EOF);
+    return ast;
+  }
+
+  parseExpr() {
+    const first = this.parseSubExpr();
+    const t = this.peek();
+    if (t.type === TT.COMMA) {
+      const parts = [first];
+      while (this.match(TT.COMMA)) parts.push(this.parseSubExpr());
+      return {type: 'conjunction', parts};
+    }
+    if (t.type === TT.SEMI) {
+      const parts = [first];
+      while (this.match(TT.SEMI)) parts.push(this.parseSubExpr());
+      return {type: 'disjunction', parts};
+    }
+    if (t.type === TT.DASH) {
+      this.advance();
+      const excluded = this.parseSubExpr();
+      return {type: 'exclusion', include: first, exclude: excluded};
+    }
+    return first;
+  }
+
+  parseSubExpr() {
+    let systemUri = null;
+    // Check for systemUri: (URI)
+    if (this.peek().type === TT.OPEN) {
+      const saved = this.pos;
+      this.advance();
+      if (this.peek().type === TT.URI) {
+        const uri = this.advance().value;
+        if (this.peek().type === TT.CLOSE) {
+          this.advance();
+          // Is this a systemUri prefix or a grouped expression?
+          // If next token could start a simpleExpr or is OPEN, it's a systemUri
+          const next = this.peek();
+          if (next.type === TT.OPEN || next.type === TT.STAR || next.type === TT.SCODE ||
+              next.type === TT.QUOTED || next.type === TT.IN || next.type === TT.LCRLY ||
+              this.isOperator(next.type)) {
+            systemUri = uri;
+          } else {
+            // It was a grouped code list like (code1;code2), backtrack
+            this.pos = saved;
+          }
+        } else {
+          this.pos = saved;
+        }
+      } else {
+        this.pos = saved;
+      }
+    }
+
+    // Grouped expression
+    if (this.peek().type === TT.OPEN) {
+      this.advance();
+      const inner = this.parseExpr();
+      this.expect(TT.CLOSE);
+      // Check for dot (of operator on grouped result)
+      if (this.peek().type === TT.DOT) {
+        this.advance();
+        const prop = this.parseCode();
+        return {type: 'of', value: inner, property: prop, systemUri};
+      }
+      if (systemUri) inner.systemUri = systemUri;
+      return inner;
+    }
+
+    return this.parseSimpleExpr(systemUri);
+  }
+
+  isOperator(type) {
+    return [TT.EQ, TT.IS_A, TT.IS_NOT_A, TT.DESC_OF, TT.REGEX, TT.IN, TT.NOT_IN,
+            TT.GENERALIZES, TT.CHILD_OF, TT.DESC_LEAF, TT.EXISTS].includes(type);
+  }
+
+  parseSimpleExpr(systemUri) {
+    const t = this.peek();
+
+    // Star
+    if (t.type === TT.STAR) {
+      this.advance();
+      // Check for .property (of operator)
+      if (this.peek().type === TT.DOT) {
+        this.advance();
+        const prop = this.parseCode();
+        return {type: 'of', value: {type: 'star'}, property: prop, systemUri};
+      }
+      return {type: 'star', systemUri};
+    }
+
+    // includeVs: ^URI or ^(URI)
+    if (t.type === TT.IN) {
+      this.advance();
+      if (this.peek().type === TT.URI) {
+        return {type: 'includeVs', uri: this.advance().value, systemUri};
+      }
+      if (this.peek().type === TT.OPEN) {
+        this.advance();
+        const uri = this.expect(TT.URI).value;
+        this.expect(TT.CLOSE);
+        return {type: 'includeVs', uri, systemUri};
+      }
+      throw new ParseError('Expected URI after ^', t.pos);
+    }
+
+    // codeList starting with {
+    if (t.type === TT.LCRLY) {
+      const saved = this.pos;
+      this.advance();
+      // Could be a filterList or codeList. Try to distinguish.
+      // If first item is followed by an operator, it's a filterList.
+      // If first item is followed by comma and next is a code (not operator), it's a codeList.
+      const firstCode = this.parseCode();
+      const next = this.peek();
+
+      if (this.isOperator(next.type) || next.type === TT.DOT) {
+        // It's a filterList (code followed by operator or dot means filter, not codeList)
+        this.pos = saved;
+        const fl = this.parseFilterList();
+        // filterList followed by .property = "of" operator
+        if (this.peek().type === TT.DOT) {
+          this.advance();
+          const prop = this.parseCode();
+          return {type: 'of', value: fl, property: prop, systemUri};
+        }
+        // Standalone filterList — evaluate the filters directly
+        if (fl.filters && fl.filters.length === 1) return fl.filters[0];
+        return fl;
+      }
+
+      // It's a codeList (or a single code in braces... which VCL grammar says needs 2+ codes)
+      const codes = [firstCode];
+      while (this.match(TT.COMMA)) codes.push(this.parseCode());
+      this.expect(TT.RCRLY);
+
+      // Check for .property
+      if (this.peek().type === TT.DOT) {
+        this.advance();
+        const prop = this.parseCode();
+        return {type: 'of', value: {type: 'codeList', codes}, property: prop, systemUri};
+      }
+
+      // If just one code, treat as a code (grammar says 2+ for codeList but be lenient)
+      if (codes.length === 1) return {type: 'code', value: codes[0], systemUri};
+      return {type: 'codeList', codes, systemUri};
+    }
+
+    // code or filter (both start with SCODE/QUOTED)
+    if (t.type === TT.SCODE || t.type === TT.QUOTED) {
+      const code = this.parseCode();
+      const next = this.peek();
+
+      // Check for filter operators
+      if (this.isOperator(next.type)) {
+        return this.parseFilterRest(code, systemUri);
+      }
+
+      // Check for .property (of operator / property navigation)
+      if (next.type === TT.DOT) {
+        this.advance();
+        const prop = this.parseCode();
+        return {type: 'of', value: {type: 'code', value: code}, property: prop, systemUri};
+      }
+
+      // Just a code
+      return {type: 'code', value: code, systemUri};
+    }
+
+    throw new ParseError(`Unexpected token: ${t.type} '${t.value}'`, t.pos);
+  }
+
+  parseFilterRest(property, systemUri) {
+    const op = this.advance();
+    const opType = op.type;
+
+    if (opType === TT.EQ) return {type: 'filter', property, op: '=', value: this.parseCode(), systemUri};
+    if (opType === TT.IS_A) return {type: 'filter', property, op: 'is-a', value: this.parseCode(), systemUri};
+    if (opType === TT.IS_NOT_A) return {type: 'filter', property, op: 'is-not-a', value: this.parseCode(), systemUri};
+    if (opType === TT.DESC_OF) return {type: 'filter', property, op: 'descendent-of', value: this.parseCode(), systemUri};
+    if (opType === TT.GENERALIZES) return {type: 'filter', property, op: 'generalizes', value: this.parseCode(), systemUri};
+    if (opType === TT.CHILD_OF) return {type: 'filter', property, op: 'child-of', value: this.parseCode(), systemUri};
+    if (opType === TT.DESC_LEAF) return {type: 'filter', property, op: 'descendent-leaf', value: this.parseCode(), systemUri};
+    if (opType === TT.EXISTS) return {type: 'filter', property, op: 'exists', value: this.parseCode(), systemUri};
+
+    if (opType === TT.REGEX) {
+      const str = this.expect(TT.QUOTED).value;
+      return {type: 'filter', property, op: 'regex', value: str, systemUri};
+    }
+
+    if (opType === TT.IN || opType === TT.NOT_IN) {
+      const inOp = opType === TT.IN ? 'in' : 'not-in';
+      const next = this.peek();
+      if (next.type === TT.URI) {
+        return {type: 'filter', property, op: inOp, value: {type: 'vsRef', uri: this.advance().value}, systemUri};
+      }
+      if (next.type === TT.LCRLY) {
+        // Could be codeList or filterList
+        const saved = this.pos;
+        this.advance(); // consume {
+        const firstCode = this.parseCode();
+        const after = this.peek();
+        this.pos = saved; // backtrack
+
+        if (this.isOperator(after.type)) {
+          // filterList
+          const fl = this.parseFilterList();
+          return {type: 'filter', property, op: inOp, value: fl, systemUri};
+        } else {
+          // codeList
+          const cl = this.parseCodeList();
+          return {type: 'filter', property, op: inOp, value: cl, systemUri};
+        }
+      }
+      throw new ParseError(`Expected {codeList}, {filterList}, or URI after ${op.value}`, op.pos);
+    }
+
+    throw new ParseError(`Unknown operator: ${op.value}`, op.pos);
+  }
+
+  parseCodeList() {
+    this.expect(TT.LCRLY);
+    const codes = [this.parseCode()];
+    while (this.match(TT.COMMA)) codes.push(this.parseCode());
+    this.expect(TT.RCRLY);
+    return {type: 'codeList', codes};
+  }
+
+  parseFilterList() {
+    this.expect(TT.LCRLY);
+    const filters = [this.parseFilter()];
+    while (this.match(TT.COMMA)) filters.push(this.parseFilter());
+    this.expect(TT.RCRLY);
+    return {type: 'filterList', filters};
+  }
+
+  parseFilter() {
+    const t = this.peek();
+    if (t.type === TT.SCODE || t.type === TT.QUOTED) {
+      const code = this.parseCode();
+      if (this.isOperator(this.peek().type)) {
+        return this.parseFilterRest(code, null);
+      }
+      // Could be code.property (of)
+      if (this.peek().type === TT.DOT) {
+        this.advance();
+        const prop = this.parseCode();
+        return {type: 'of', value: {type: 'code', value: code}, property: prop};
+      }
+      throw new ParseError(`Expected operator after '${code}'`, this.peek().pos);
+    }
+    throw new ParseError(`Expected filter, got ${t.type}`, t.pos);
+  }
+
+  parseCode() {
+    const t = this.peek();
+    if (t.type === TT.SCODE) return this.advance().value;
+    if (t.type === TT.QUOTED) return this.advance().value;
+    throw new ParseError(`Expected code, got ${t.type} '${t.value}'`, t.pos);
+  }
+}
+
+function parseVCL(input) {
+  const tokens = tokenize(input);
+  const parser = new Parser(tokens);
+  return parser.parse();
+}
+
+// ==================== EVALUATOR ====================
+function evaluate(ast) {
+  switch (ast.type) {
+    case 'star':
+      return new Set(DB.allCodes);
+
+    case 'code': {
+      const c = DB.byCode.get(ast.value);
+      return c ? new Set([ast.value]) : new Set();
+    }
+
+    case 'codeList':
+      return new Set(ast.codes.filter(c => DB.byCode.has(c)));
+
+    case 'filter':
+      return evalFilter(ast);
+
+    case 'of':
+      return evalOf(ast);
+
+    case 'conjunction': {
+      let result = null;
+      for (const part of ast.parts) {
+        const partResult = evaluate(part);
+        if (result === null) result = partResult;
+        else result = intersect(result, partResult);
+      }
+      return result || new Set();
+    }
+
+    case 'disjunction': {
+      const result = new Set();
+      for (const part of ast.parts) {
+        for (const code of evaluate(part)) result.add(code);
+      }
+      return result;
+    }
+
+    case 'exclusion': {
+      const include = evaluate(ast.include);
+      const exclude = evaluate(ast.exclude);
+      const result = new Set(include);
+      for (const code of exclude) result.delete(code);
+      return result;
+    }
+
+    case 'includeVs':
+      // Can't resolve external ValueSet URIs in this demo
+      return new Set();
+
+    case 'filterList': {
+      // A filterList evaluates as the intersection of its filters
+      let result = null;
+      for (const f of ast.filters) {
+        const fResult = evaluate(f);
+        if (result === null) result = fResult;
+        else result = intersect(result, fResult);
+      }
+      return result || new Set();
+    }
+
+    default:
+      return new Set();
+  }
+}
+
+function evalFilter(ast) {
+  const {property, op, value} = ast;
+  const results = new Set();
+
+  if (op === '=') {
+    const targetValue = typeof value === 'object' ? value.value : value;
+    // Check concept edges
+    for (const code of DB.allCodes) {
+      // Check edges where source=code, property matches, target=value
+      const edges = DB.edgesBySource.get(code) || [];
+      for (const e of edges) {
+        if (e.property === property && e.target === targetValue) { results.add(code); break; }
+      }
+      if (results.has(code)) continue;
+      // Check literals
+      const lits = DB.literalsByCode.get(code) || [];
+      for (const l of lits) {
+        if (l.property === property && l.value === targetValue) { results.add(code); break; }
+      }
+    }
+    return results;
+  }
+
+  if (op === 'exists') {
+    const val = typeof value === 'object' ? value.value || value : value;
+    const wantExists = val === 'true' || val === true;
+    for (const code of DB.allCodes) {
+      const edges = DB.edgesBySource.get(code) || [];
+      let found = edges.some(e => e.property === property);
+      if (!found) {
+        const lits = DB.literalsByCode.get(code) || [];
+        found = lits.some(l => l.property === property);
+      }
+      if (found === wantExists) results.add(code);
+    }
+    return results;
+  }
+
+  if (op === 'regex') {
+    let re;
+    try { re = new RegExp(value); } catch(e) { return results; }
+    for (const code of DB.allCodes) {
+      // Check if property value matches regex
+      if (property === 'code' || property === 'display') {
+        const c = DB.byCode.get(code);
+        const testVal = property === 'code' ? c.code : c.display;
+        if (testVal && re.test(testVal)) results.add(code);
+        continue;
+      }
+      const lits = DB.literalsByCode.get(code) || [];
+      for (const l of lits) {
+        if (l.property === property && re.test(l.value)) { results.add(code); break; }
+      }
+      const edges = DB.edgesBySource.get(code) || [];
+      for (const e of edges) {
+        if (e.property === property && re.test(e.target)) { results.add(code); break; }
+      }
+    }
+    return results;
+  }
+
+  if (op === 'in' || op === 'not-in') {
+    let matchSet;
+    if (value.type === 'codeList') {
+      matchSet = new Set(value.codes);
+    } else if (value.type === 'filterList') {
+      // Evaluate the nested filters and collect matching codes
+      matchSet = new Set();
+      // Each filter in the list is ANDed — evaluate each, intersect
+      let nested = null;
+      for (const f of value.filters) {
+        const fResult = evaluate(f);
+        if (nested === null) nested = fResult;
+        else nested = intersect(nested, fResult);
+      }
+      matchSet = nested || new Set();
+    } else {
+      return results; // URI reference, can't resolve
+    }
+
+    for (const code of DB.allCodes) {
+      const edges = DB.edgesBySource.get(code) || [];
+      let found = false;
+      for (const e of edges) {
+        if (e.property === property && matchSet.has(e.target)) { found = true; break; }
+      }
+      if (!found) {
+        const lits = DB.literalsByCode.get(code) || [];
+        for (const l of lits) {
+          if (l.property === property && matchSet.has(l.value)) { found = true; break; }
+        }
+      }
+      if (op === 'in' ? found : !found) results.add(code);
+    }
+    return results;
+  }
+
+  // For hierarchy operators (is-a, descendent-of, etc.) — limited support in this demo
+  // since we don't have full isa hierarchy in the subset
+  return results;
+}
+
+function evalOf(ast) {
+  // "of" operator: start with value set, follow property to get targets
+  const valueCodes = evaluate(ast.value);
+  const results = new Set();
+  const prop = ast.property;
+
+  for (const code of valueCodes) {
+    const edges = DB.edgesBySource.get(code) || [];
+    for (const e of edges) {
+      if (e.property === prop) results.add(e.target);
+    }
+  }
+  return results;
+}
+
+function intersect(a, b) {
+  const result = new Set();
+  for (const x of a) { if (b.has(x)) result.add(x); }
+  return result;
+}
+
+// ==================== AST TO COMPOSE JSON ====================
+// Build a nested compose value for R6 filter values (filterList, of, etc.)
+function nestedComposeValue(node, system) {
+  if (node.type === 'filter') {
+    const f = { property: node.property, op: node.op };
+    if (typeof node.value === 'string') f.value = node.value;
+    else if (node.value && node.value.type === 'codeList') f.value = node.value.codes.join(',');
+    else if (node.value && node.value.type === 'filterList') f.value = nestedComposeValue(node.value, system);
+    else f.value = String(node.value);
+    return { filter: [f] };
+  }
+  if (node.type === 'filterList') {
+    const filters = node.filters.map(f => {
+      const r = { property: f.property, op: f.op };
+      if (typeof f.value === 'string') r.value = f.value;
+      else if (f.value && f.value.type === 'codeList') r.value = f.value.codes.join(',');
+      else if (f.value && f.value.type === 'filterList') r.value = nestedComposeValue(f.value, system);
+      else r.value = String(f.value);
+      return r;
+    });
+    return { filter: filters };
+  }
+  if (node.type === 'of') {
+    const f = { property: node.property, op: 'of' };
+    if (node.value.type === 'code') f.value = node.value.value;
+    else if (node.value.type === 'codeList') f.value = node.value.codes.join(',');
+    else f.value = nestedComposeValue(node.value, system);
+    return { filter: [f] };
+  }
+  if (node.type === 'conjunction') {
+    const filters = [];
+    for (const p of node.parts) {
+      const nested = nestedComposeValue(p, system);
+      if (nested.filter) filters.push(...nested.filter);
+    }
+    return { filter: filters };
+  }
+  if (node.type === 'code') return { concept: [{ code: node.value }] };
+  if (node.type === 'codeList') return { concept: node.codes.map(c => ({ code: c })) };
+  return { _note: `Unsupported nested: ${node.type}` };
+}
+
+function astToCompose(ast, system) {
+  system = system || RXNORM_DATA.system;
+  const compose = { include: [], exclude: [] };
+
+  function addFilters(node, target) {
+    if (node.type === 'filter') {
+      const f = { property: node.property, op: node.op };
+      if (typeof node.value === 'string') f.value = node.value;
+      else if (node.value && node.value.type === 'codeList') f.value = node.value.codes.join(',');
+      else if (typeof node.value === 'object' && node.value.value) f.value = node.value.value;
+      else f.value = String(node.value);
+      target.push({ system, filter: [f] });
+    } else if (node.type === 'conjunction') {
+      const filters = [];
+      for (const p of node.parts) {
+        if (p.type === 'filter') {
+          const f = { property: p.property, op: p.op };
+          if (typeof p.value === 'string') f.value = p.value;
+          else if (p.value && p.value.type === 'codeList') f.value = p.value.codes.join(',');
+          else if (p.value && p.value.type === 'filterList') f.value = nestedComposeValue(p.value, system);
+          else f.value = String(p.value);
+          filters.push(f);
+        } else if (p.type === 'of') {
+          const f = { property: p.property, op: 'of' };
+          if (p.value.type === 'code') f.value = p.value.value;
+          else if (p.value.type === 'codeList') f.value = p.value.codes.join(',');
+          else f.value = nestedComposeValue(p.value, system);
+          filters.push(f);
+        } else {
+          filters.push({ property: 'vcl', op: '=', value: '(complex)' });
+        }
+      }
+      target.push({ system, filter: filters });
+    } else if (node.type === 'disjunction') {
+      for (const p of node.parts) addFilters(p, target);
+    } else if (node.type === 'code') {
+      target.push({ system, concept: [{ code: node.value }] });
+    } else if (node.type === 'codeList') {
+      target.push({ system, concept: node.codes.map(c => ({ code: c })) });
+    } else if (node.type === 'star') {
+      target.push({ system });
+    } else if (node.type === 'of') {
+      const f = { property: node.property, op: 'of' };
+      // Build the "value" side of the of-filter
+      if (node.value.type === 'code') {
+        f.value = node.value.value;
+      } else if (node.value.type === 'codeList') {
+        f.value = node.value.codes.join(',');
+      } else if (node.value.type === 'star') {
+        f.value = '*';
+      } else {
+        // Complex value (filter, filterList, nested of) → R6 nested filter value
+        f.value = nestedComposeValue(node.value, system);
+      }
+      target.push({ system, filter: [f] });
+    } else {
+      target.push({ system, _note: `Unsupported: ${node.type}` });
+    }
+  }
+
+  if (ast.type === 'exclusion') {
+    addFilters(ast.include, compose.include);
+    addFilters(ast.exclude, compose.exclude);
+  } else {
+    addFilters(ast, compose.include);
+  }
+
+  if (compose.exclude.length === 0) delete compose.exclude;
+  return compose;
+}
+
+// ==================== AST PRETTY PRINTER ====================
+function prettyAST(ast, indent) {
+  indent = indent || 0;
+  const pad = '  '.repeat(indent);
+  if (!ast || typeof ast !== 'object') return pad + String(ast);
+
+  switch (ast.type) {
+    case 'code': return `${pad}Code: ${ast.value}`;
+    case 'star': return `${pad}Star: *`;
+    case 'codeList': return `${pad}CodeList: {${ast.codes.join(', ')}}`;
+    case 'filter': {
+      let val = typeof ast.value === 'string' ? ast.value :
+                ast.value && ast.value.type ? `[${ast.value.type}]` : String(ast.value);
+      let s = `${pad}Filter: ${ast.property} ${ast.op} ${val}`;
+      if (ast.value && ast.value.type === 'filterList') {
+        s += '\n' + ast.value.filters.map(f => prettyAST(f, indent + 1)).join('\n');
+      }
+      if (ast.value && ast.value.type === 'codeList') {
+        s = `${pad}Filter: ${ast.property} ${ast.op} {${ast.value.codes.join(', ')}}`;
+      }
+      return s;
+    }
+    case 'of': return `${pad}Of: .${ast.property}\n${prettyAST(ast.value, indent + 1)}`;
+    case 'conjunction': return `${pad}AND:\n${ast.parts.map(p => prettyAST(p, indent + 1)).join('\n')}`;
+    case 'disjunction': return `${pad}OR:\n${ast.parts.map(p => prettyAST(p, indent + 1)).join('\n')}`;
+    case 'exclusion': return `${pad}EXCEPT:\n${pad}  include:\n${prettyAST(ast.include, indent + 2)}\n${pad}  exclude:\n${prettyAST(ast.exclude, indent + 2)}`;
+    case 'includeVs': return `${pad}IncludeVS: ${ast.uri}`;
+    default: return `${pad}${JSON.stringify(ast, null, 2)}`;
+  }
+}
+
+// ==================== UI ====================
+const input = document.getElementById('playground-input');
+const errorEl = document.getElementById('playground-error');
+const infoEl = document.getElementById('playground-info');
+const resultsBody = document.getElementById('results-body');
+const resultsCount = document.getElementById('results-count');
+const composeEl = document.getElementById('compose-json');
+const treeEl = document.getElementById('parse-tree');
+
+let debounceTimer = null;
+input.addEventListener('input', () => {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(runQuery, 150);
+});
+
+function tryVCL(expr) {
+  input.value = expr;
+  input.focus();
+  runQuery();
+  // On narrow screens, scroll to the playground; on wide screens it's always visible
+  if (window.innerWidth < 1100) {
+    document.getElementById('playground').scrollIntoView({behavior: 'smooth'});
+  }
+}
+
+function runQuery() {
+  const expr = input.value.trim();
+  errorEl.textContent = '';
+  infoEl.textContent = '';
+  resultsBody.innerHTML = '';
+  resultsCount.textContent = '';
+  composeEl.textContent = '';
+  treeEl.textContent = '';
+
+  if (!expr) return;
+
+  let ast, results;
+  try {
+    ast = parseVCL(expr);
+  } catch (e) {
+    errorEl.textContent = e.message + (e.pos !== undefined ? ` (at position ${e.pos})` : '');
+    return;
+  }
+
+  try {
+    results = evaluate(ast);
+  } catch (e) {
+    errorEl.textContent = 'Evaluation error: ' + e.message;
+    return;
+  }
+
+  // Results table
+  const sorted = [...results]
+    .map(code => DB.byCode.get(code))
+    .filter(Boolean)
+    .sort((a, b) => {
+      const ttyOrder = ['IN','PIN','DF','MIN','SCDC','SCDF','SCD','BN','SBDC','SBD'];
+      const ai = ttyOrder.indexOf(a.tty), bi = ttyOrder.indexOf(b.tty);
+      if (ai !== bi) return ai - bi;
+      return a.display.localeCompare(b.display);
+    });
+
+  resultsCount.textContent = `${sorted.length} result${sorted.length !== 1 ? 's' : ''}`;
+  const maxShow = 200;
+  const showing = sorted.slice(0, maxShow);
+  resultsBody.innerHTML = showing.map(c => `
+    <tr>
+      <td class="code-cell" onclick="tryVCL('${c.code}')">${c.code}</td>
+      <td>${esc(c.display)}</td>
+      <td><span class="tty tty-${c.tty}">${c.tty}</span></td>
+    </tr>
+  `).join('');
+  if (sorted.length > maxShow) {
+    resultsBody.innerHTML += `<tr><td colspan="3" style="color:#94a3b8">...and ${sorted.length - maxShow} more</td></tr>`;
+  }
+
+  // Compose JSON
+  try {
+    const compose = astToCompose(ast);
+    composeEl.textContent = JSON.stringify(compose, null, 2);
+  } catch(e) {
+    composeEl.textContent = 'Error generating compose: ' + e.message;
+  }
+
+  // Parse tree
+  treeEl.textContent = prettyAST(ast);
+
+  infoEl.textContent = `Parsed OK. Evaluated against ${DB.allCodes.size} concepts.`;
+}
+
+function showTab(name) {
+  document.querySelectorAll('.pg-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.pg-panel').forEach(p => p.classList.remove('active'));
+  document.querySelector(`.pg-tab[onclick*="${name}"]`).classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+function esc(s) {
+  return s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
+}
+
+// Pick up expression from spec page "Try it" links (via localStorage)
+if (location.hash === '#playground') {
+  const expr = localStorage.getItem('vcl-try');
+  if (expr) {
+    localStorage.removeItem('vcl-try');
+    input.value = expr;
+    setTimeout(() => { runQuery(); input.focus(); }, 100);
+  } else {
+    setTimeout(() => input.focus(), 100);
+  }
+}
+</script>
+</body>
+</html>
