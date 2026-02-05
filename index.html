@@ -555,37 +555,21 @@ dd { margin-left: 1.5em; margin-bottom: 0.5em; }
 
 <h3>Usage with <code>$expand</code></h3>
 <p>
-  To expand a VCL implicit ValueSet via the
-  <a href="https://build.fhir.org/valueset-operation-expand.html"><code>$expand</code></a> operation,
-  pass the implicit URI as the <code>url</code> parameter. Because the implicit URI <em>itself</em>
-  contains query-string syntax (<code>?v1=...</code>), it must be percent-encoded a second time
-  when embedded as a parameter value in the <code>$expand</code> request URL. This results in
-  <strong>double encoding</strong> of the VCL expression:
+  To expand a VCL implicit ValueSet via
+  <a href="https://build.fhir.org/valueset-operation-expand.html"><code>$expand</code></a>,
+  pass the implicit URI as the <code>url</code> parameter. Because the implicit URI itself
+  contains query-string syntax (<code>?v1=...</code>), it must be percent-encoded again
+  when used as a parameter value, producing <strong>double encoding</strong>.
 </p>
-<table>
-  <thead><tr><th>Layer</th><th>Value</th></tr></thead>
-  <tbody>
-    <tr>
-      <td>Raw VCL expression</td>
-      <td><code>(http://...rxnorm)(has_ingredient=161,has_dose_form=317541)</code></td>
-    </tr>
-    <tr>
-      <td>Implicit URI (expression percent-encoded into <code>?v1=</code>)</td>
-      <td><code>http://fhir.org/VCL?v1=(http%3A%2F%2F...rxnorm)(has_ingredient<strong>%3D</strong>161<strong>%2C</strong>has_dose_form<strong>%3D</strong>317541)</code></td>
-    </tr>
-    <tr>
-      <td><code>$expand</code> request (entire URI percent-encoded into <code>?url=</code>)</td>
-      <td><code>GET [base]/ValueSet/$expand?url=http%3A%2F%2Ffhir.org%2FVCL<strong>%3F</strong>v1<strong>%3D</strong>(http<strong>%253A%252F%252F</strong>...rxnorm)(has_ingredient<strong>%253D</strong>161<strong>%252C</strong>has_dose_form<strong>%253D</strong>317541)</code></td>
-    </tr>
-  </tbody>
-</table>
-<p>
-  The server receiving the <code>$expand</code> request decodes the <code>url</code> parameter once
-  to recover the implicit URI, then decodes the <code>v1</code> parameter to recover the raw VCL
-  expression. Alternatively, if the implicit URI is sent in the request body (e.g., in a POST-based
-  <code>$expand</code> with a <code>Parameters</code> resource), only a single level of encoding is
-  needed.
-</p>
+<p>Using a POST-based <code>$expand</code> with a <code>Parameters</code> resource body avoids
+  double encoding &mdash; the implicit URI is sent as-is in the <code>url</code> parameter value.</p>
+<p>Example with a GET request:</p>
+<pre><code>GET [base]/ValueSet/$expand
+  ?url=http%3A%2F%2Ffhir.org%2FVCL%3Fv1%3D
+    (http%253A%252F%252F...rxnorm)
+    (has_ingredient%253D161%252Chas_dose_form%253D317541)</code></pre>
+<p>The server decodes <code>?url=</code> once to recover the implicit URI, then decodes
+  <code>?v1=</code> to recover the raw VCL expression.</p>
 </section>
 
 <!-- ================================================================ -->
