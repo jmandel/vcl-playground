@@ -566,7 +566,7 @@ dd { margin-left: 1.5em; margin-bottom: 0.5em; }
 <p>Example with a GET request:</p>
 <pre><code>GET [base]/ValueSet/$expand
   ?url=http%3A%2F%2Ffhir.org%2FVCL%3Fv1%3D
-    (http%253A%252F%252F...rxnorm)
+    (http%253A%252F%252Fwww.nlm.nih.gov%252Fresearch%252Fumls%252Frxnorm)
     (has_ingredient%253D161%252Chas_dose_form%253D317541)</code></pre>
 <p>The server decodes <code>?url=</code> once to recover the implicit URI, then decodes
   <code>?v1=</code> to recover the raw VCL expression.</p>
@@ -584,7 +584,7 @@ dd { margin-left: 1.5em; margin-bottom: 0.5em; }
 <div class="side-by-side">
   <div><h4>VCL</h4><pre><code>161</code></pre></div>
   <div><h4>compose</h4><pre><code>{"include": [{
-  "system": "...",
+  "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
   "concept": [{"code": "161"}]
 }]}</code></pre></div>
 </div>
@@ -593,7 +593,7 @@ dd { margin-left: 1.5em; margin-bottom: 0.5em; }
 <div class="side-by-side">
   <div><h4>VCL</h4><pre><code>has_ingredient = 161</code></pre></div>
   <div><h4>compose</h4><pre><code>{"include": [{
-  "system": "...",
+  "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
   "filter": [{
     "property": "has_ingredient",
     "op": "=",
@@ -609,7 +609,7 @@ dd { margin-left: 1.5em; margin-bottom: 0.5em; }
   <div><h4>VCL</h4><pre><code>has_ingredient=161,
 has_dose_form=317541</code></pre></div>
   <div><h4>compose</h4><pre><code>{"include": [{
-  "system": "...",
+  "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
   "filter": [
     {"property": "has_ingredient",
      "op": "=", "value": "161"},
@@ -625,10 +625,10 @@ has_dose_form=317541</code></pre></div>
   <div><h4>VCL</h4><pre><code>has_ingredient=161;
 has_ingredient=5640</code></pre></div>
   <div><h4>compose</h4><pre><code>{"include": [
-  {"system": "...", "filter": [{
+  {"system": "http://www.nlm.nih.gov/research/umls/rxnorm", "filter": [{
     "property": "has_ingredient",
     "op": "=", "value": "161"}]},
-  {"system": "...", "filter": [{
+  {"system": "http://www.nlm.nih.gov/research/umls/rxnorm", "filter": [{
     "property": "has_ingredient",
     "op": "=", "value": "5640"}]}
 ]}</code></pre></div>
@@ -640,12 +640,12 @@ has_ingredient=5640</code></pre></div>
   <div><h4>VCL</h4><pre><code>(has_ingredient=161) -
 (has_ingredient=5489)</code></pre></div>
   <div><h4>compose</h4><pre><code>{"include": [{
-  "system": "...",
+  "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
   "filter": [{"property": "has_ingredient",
     "op": "=", "value": "161"}]
 }],
 "exclude": [{
-  "system": "...",
+  "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
   "filter": [{"property": "has_ingredient",
     "op": "=", "value": "5489"}]
 }]}</code></pre></div>
@@ -680,7 +680,7 @@ has_ingredient=5640</code></pre></div>
 <div class="side-by-side">
   <div><h4>VCL</h4><pre><code>104906 . has_tradename</code></pre></div>
   <div><h4>compose</h4><pre><code>{"include": [{
-  "system": "...",
+  "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
   "filter": [{
     "property": "has_tradename",
     "op": "of",
@@ -696,18 +696,18 @@ identified by <code>http://fhir.org/VCL?v1=(system)(expression)</code>.</p>
 <div class="side-by-side">
   <div><h4>VCL</h4><pre><code>{104906 . has_tradename} . has_ingredient</code></pre></div>
   <div><h4>compose (top-level)</h4><pre><code>{"include": [{
-  "system": "...",
+  "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
   "filter": [{
     "property": "has_ingredient",
     "op": "of",
-    "value": "http://fhir.org/VCL?v1=(...)(104906.has_tradename)"
+    "value": "http://fhir.org/VCL?v1=(http%3A%2F%2Fwww.nlm.nih.gov%2Fresearch%2Fumls%2Frxnorm)(104906.has_tradename)"
   }]
 }]}</code></pre></div>
 </div>
 <div class="side-by-side">
-  <div><h4>VCL URL</h4><pre><code>http://fhir.org/VCL?v1=(...)(104906.has_tradename)</code></pre></div>
+  <div><h4>VCL URL</h4><pre><code>http://fhir.org/VCL?v1=(http%3A%2F%2Fwww.nlm.nih.gov%2Fresearch%2Fumls%2Frxnorm)(104906.has_tradename)</code></pre></div>
   <div><h4>compose (dependency)</h4><pre><code>{"include": [{
-  "system": "...",
+  "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
   "filter": [{
     "property": "has_tradename",
     "op": "of",
@@ -722,18 +722,18 @@ to a separate ValueSet containing the nested expression.</p>
 <div class="side-by-side">
   <div><h4>VCL</h4><pre><code>consists_of ^ {has_ingredient = 161}</code></pre></div>
   <div><h4>compose (top-level)</h4><pre><code>{"include": [{
-  "system": "...",
+  "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
   "filter": [{
     "property": "consists_of",
     "op": "in",
-    "value": "http://fhir.org/VCL?v1=(...)(has_ingredient=161)"
+    "value": "http://fhir.org/VCL?v1=(http%3A%2F%2Fwww.nlm.nih.gov%2Fresearch%2Fumls%2Frxnorm)(has_ingredient=161)"
   }]
 }]}</code></pre></div>
 </div>
 <div class="side-by-side">
-  <div><h4>VCL URL</h4><pre><code>http://fhir.org/VCL?v1=(...)(has_ingredient=161)</code></pre></div>
+  <div><h4>VCL URL</h4><pre><code>http://fhir.org/VCL?v1=(http%3A%2F%2Fwww.nlm.nih.gov%2Fresearch%2Fumls%2Frxnorm)(has_ingredient=161)</code></pre></div>
   <div><h4>compose (dependency)</h4><pre><code>{"include": [{
-  "system": "...",
+  "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
   "filter": [{
     "property": "has_ingredient",
     "op": "=",
