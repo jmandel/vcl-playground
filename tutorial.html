@@ -78,18 +78,19 @@ td code { white-space: nowrap; }
 
 /* ========== PLAYGROUND (light theme) ========== */
 #playground-col { background: var(--bg); color: var(--fg); }
-#playground-input-wrap { position: relative; margin: 0.75em 0; background: white; border: 2px solid var(--border); border-radius: 8px; }
+#playground-input-wrap { position: relative; margin: 0.75em 0; background: white; border: 2px solid var(--border); border-radius: 8px;
+  display: flex; flex-wrap: wrap; align-items: center; }
 #playground-input-wrap:focus-within { border-color: var(--accent); }
-#playground-system-prefix { display: block; font-family: var(--mono); font-size: 0.78em; color: var(--muted);
+#playground-system-prefix { display: block; width: 100%; font-family: var(--mono); font-size: 0.78em; color: var(--muted);
   padding: 0.5em 0.75em 0; user-select: none; }
-#playground-input { width: 100%; font-family: var(--mono); font-size: 1em; padding: 0.4em 0.75em 0.6em;
+#playground-input { flex: 1; min-width: 0; font-family: var(--mono); font-size: 1em; padding: 0.4em 0.75em 0.6em;
   background: transparent; color: var(--fg); border: none; outline: none; }
-#share-row { display: flex; align-items: center; gap: 0.5em; margin: 0.4em 0; }
-#copy-link-btn { background: var(--accent-light); border: 1px solid var(--accent); color: var(--accent);
-  border-radius: 4px; padding: 0.3em 0.7em; font-size: 0.8em; cursor: pointer; font-family: var(--font);
-  font-weight: 500; transition: all 0.15s; white-space: nowrap; }
-#copy-link-btn:hover { background: var(--accent); color: white; }
+#copy-link-btn { display: inline-flex; align-items: center; gap: 0.3em; background: transparent; border: 1px solid var(--border);
+  color: var(--muted); border-radius: 4px; padding: 0.3em 0.6em; font-size: 0.75em; cursor: pointer; font-family: var(--font);
+  font-weight: 500; transition: all 0.15s; white-space: nowrap; margin-right: 0.4em; flex-shrink: 0; }
+#copy-link-btn:hover { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
 #copy-link-btn.copied { background: #dcfce7; color: var(--success); border-color: var(--success); }
+#copy-link-btn svg { flex-shrink: 0; }
 #playground-error { color: var(--error); font-family: var(--mono); font-size: 0.8em; margin: 0.4em 0; min-height: 1.2em; }
 #playground-info { color: var(--muted); font-size: 0.8em; margin: 0.25em 0; min-height: 1.2em; }
 
@@ -140,11 +141,11 @@ nav a:hover { color: var(--accent); }
 .grammar-block .lit { color: #059669; }
 .grammar-block .comment { color: #94a3b8; }
 </style>
-<script type="module" crossorigin src="./vcl-tutorial-template-ajrddps6.js"></script></head>
+</head>
 <body>
 
 <nav>
-  <a href="vcl-spec.html" style="color: var(--accent);">&larr; VCL Spec</a>
+  <a href="index.html" style="color: var(--accent);">&larr; VCL Spec</a>
   <a href="#model">Mental Model</a>
   <a href="#building-blocks">Building Blocks</a>
   <a href="#worked-examples">Worked Examples</a>
@@ -165,7 +166,7 @@ nav a:hover { color: var(--accent); }
 </p>
 <p>
   For formal definitions, operator semantics, and the mapping to <code>ValueSet.compose</code>,
-  see the <a href="vcl-spec.html">VCL Specification</a>.
+  see the <a href="index.html">VCL Specification</a>.
 </p>
 </section>
 
@@ -627,11 +628,9 @@ can resolve directly with <code>$expand</code>:</p>
   <div id="playground-input-wrap">
     <span id="playground-system-prefix">(http://www.nlm.nih.gov/research/umls/rxnorm)</span>
     <input id="playground-input" type="text" placeholder="Type a VCL expression..." spellcheck="false" autocomplete="off">
+    <button id="copy-link-btn" onclick="copyLink()" title="Copy shareable link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> Share</button>
   </div>
-  <div id="share-row">
-    <button id="copy-link-btn" onclick="copyLink()" title="Copy shareable link">Share link</button>
-    <span id="playground-info"></span>
-  </div>
+  <div id="playground-info"></div>
   <div id="playground-error"></div>
 
   <div class="pg-tabs">
@@ -661,6 +660,6 @@ can resolve directly with <code>$expand</code>:</p>
 </div><!-- /.container -->
 
 <!-- ============================== JAVASCRIPT ============================== -->
-
+<script type="module" src="./app.ts"></script>
 </body>
 </html>

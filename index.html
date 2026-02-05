@@ -69,7 +69,7 @@ dd { margin-left: 1.5em; margin-bottom: 0.5em; }
   <a href="#implicit-uris">Implicit URIs</a>
   <a href="#compose-mapping">Compose Mapping</a>
   <a href="#grammar">Grammar</a>
-  <a href="vcl-tutorial.html" style="color: var(--accent);">Interactive Tutorial &rarr;</a>
+  <a href="tutorial.html" style="color: var(--accent);">Interactive Tutorial &rarr;</a>
 </nav>
 
 <div class="container">
@@ -107,7 +107,7 @@ dd { margin-left: 1.5em; margin-bottom: 0.5em; }
   VCL was designed by Michael Lawley (CSIRO) and is formally specified in the
   <a href="https://build.fhir.org/ig/FHIR/ig-guidance/vcl.html">FHIR IG Guidance</a>.
   This page provides an expanded specification with definitions, examples, and links to an
-  <a href="vcl-tutorial.html">interactive tutorial</a> with a live RxNorm dataset.
+  <a href="tutorial.html">interactive tutorial</a> with a live RxNorm dataset.
 </div>
 </section>
 
@@ -200,7 +200,7 @@ dd { margin-left: 1.5em; margin-bottom: 0.5em; }
     <pre><code>has_ingredient=161, has_dose_form=317541</code></pre>
     <p>Concepts containing acetaminophen <em>and</em> in oral tablet form.
     Maps to multiple <code>filter</code> entries within a single <code>include</code> element.
-    <a class="try-link" href="vcl-tutorial.html#playground" onclick="localStorage.setItem('vcl-try','has_ingredient=161,has_dose_form=317541')">Try it</a></p>
+    <a class="try-link" href="tutorial.html#example=and-ingredient-df">Try it</a></p>
   </dd>
 
   <dt>Disjunction (OR) &mdash; <code>;</code></dt>
@@ -210,7 +210,7 @@ dd { margin-left: 1.5em; margin-bottom: 0.5em; }
     <pre><code>has_ingredient=161; has_ingredient=5640</code></pre>
     <p>Concepts containing acetaminophen <em>or</em> ibuprofen.
     Maps to separate <code>include</code> elements.
-    <a class="try-link" href="vcl-tutorial.html#playground" onclick="localStorage.setItem('vcl-try','has_ingredient=161;has_ingredient=5640')">Try it</a></p>
+    <a class="try-link" href="tutorial.html#example=or-ingredients">Try it</a></p>
   </dd>
 
   <dt>Exclusion (MINUS) &mdash; <code>-</code></dt>
@@ -219,7 +219,7 @@ dd { margin-left: 1.5em; margin-bottom: 0.5em; }
     <pre><code>(has_ingredient=161) - (has_ingredient=5489)</code></pre>
     <p>Concepts containing acetaminophen, excluding those also containing hydrocodone.
     The left side maps to <code>compose.include</code>; the right side to <code>compose.exclude</code>.
-    <a class="try-link" href="vcl-tutorial.html#playground" onclick="localStorage.setItem('vcl-try','(has_ingredient=161)-(has_ingredient=5489)')">Try it</a></p>
+    <a class="try-link" href="tutorial.html#example=exclusion">Try it</a></p>
   </dd>
 </dl>
 
@@ -258,7 +258,7 @@ dd { margin-left: 1.5em; margin-bottom: 0.5em; }
 <pre><code>161</code></pre>
 <p>
   Selects the single concept with code <code>161</code>.
-  <a class="try-link" href="vcl-tutorial.html#playground" onclick="localStorage.setItem('vcl-try','161')">Try it</a>
+  <a class="try-link" href="tutorial.html#example=code-161">Try it</a>
 </p>
 
 <h3 id="expr-star">Wildcard</h3>
@@ -283,7 +283,7 @@ dd { margin-left: 1.5em; margin-bottom: 0.5em; }
 <p>
   Selects all concepts whose <code>has_ingredient</code> property has the value <code>161</code>.
   In RxNorm, this returns drug components (SCDCs) containing acetaminophen.
-  <a class="try-link" href="vcl-tutorial.html#playground" onclick="localStorage.setItem('vcl-try','has_ingredient=161')">Try it</a>
+  <a class="try-link" href="tutorial.html#example=filter-ingredient">Try it</a>
 </p>
 <p>
   Filters work with both <strong>concept-valued properties</strong> (edges to other concepts in
@@ -292,7 +292,7 @@ dd { margin-left: 1.5em; margin-bottom: 0.5em; }
 <pre><code>TTY = SCD</code></pre>
 <p>
   Selects all concepts whose <code>TTY</code> (term type) literal property equals <code>SCD</code>.
-  <a class="try-link" href="vcl-tutorial.html#playground" onclick="localStorage.setItem('vcl-try','TTY=SCD')">Try it</a>
+  <a class="try-link" href="tutorial.html#example=filter-tty">Try it</a>
 </p>
 <p>
   Filters map directly to <code>ValueSet.compose.include.filter</code> elements. Each filter
@@ -315,7 +315,7 @@ dd { margin-left: 1.5em; margin-bottom: 0.5em; }
 <p>
   Start at concept <code>104906</code> (acetaminophen 24 MG/ML Oral Solution), follow the
   <code>has_tradename</code> relationship outward. Returns all branded versions of that drug.
-  <a class="try-link" href="vcl-tutorial.html#playground" onclick="localStorage.setItem('vcl-try','104906.has_tradename')">Try it</a>
+  <a class="try-link" href="tutorial.html#example=of-tradename">Try it</a>
 </p>
 <p>
   The value side of <code>.</code> can be any expression that produces a set of codes.
@@ -325,7 +325,7 @@ dd { margin-left: 1.5em; margin-bottom: 0.5em; }
 <p>
   Start at an SCD &rarr; follow <code>has_tradename</code> (yields SBDs) &rarr;
   follow <code>has_ingredient</code> (yields brand names). This chains two navigation steps.
-  <a class="try-link" href="vcl-tutorial.html#playground" onclick="localStorage.setItem('vcl-try','{104906.has_tradename}.has_ingredient')">Try it</a>
+  <a class="try-link" href="tutorial.html#example=of-chained">Try it</a>
 </p>
 <p>
   The left side of <code>.</code> may also be a code list, wildcard, URI, or filter list:
@@ -350,7 +350,7 @@ dd { margin-left: 1.5em; margin-bottom: 0.5em; }
 <p>
   Concepts whose <code>has_ingredient</code> value is <code>161</code>, <code>5640</code>, or
   <code>1191</code> (acetaminophen, ibuprofen, or aspirin).
-  <a class="try-link" href="vcl-tutorial.html#playground" onclick="localStorage.setItem('vcl-try','has_ingredient^{161,5640,1191}')">Try it</a>
+  <a class="try-link" href="tutorial.html#example=in-code-list">Try it</a>
 </p>
 
 <h4>A filter list (nested query)</h4>
@@ -364,7 +364,7 @@ dd { margin-left: 1.5em; margin-bottom: 0.5em; }
   Concepts whose <code>consists_of</code> property points to a concept that has
   <code>has_ingredient = 161</code>. In RxNorm: SCDs that consist of a component
   containing acetaminophen.
-  <a class="try-link" href="vcl-tutorial.html#playground" onclick="localStorage.setItem('vcl-try','consists_of^{has_ingredient=161}')">Try it</a>
+  <a class="try-link" href="tutorial.html#example=in-filter-list">Try it</a>
 </p>
 <p>
   Filter lists can nest further:
@@ -706,47 +706,63 @@ has_ingredient=5640</code></pre></div>
 </div>
 
 <h3>The "of" operator (chained multi-hop)</h3>
+<p>When an <code>of</code> operator has a complex inner expression, the compose output references
+a separate ValueSet via a <strong>VCL URL</strong>. The inner expression becomes its own ValueSet,
+identified by <code>http://fhir.org/VCL?v1=(system)(expression)</code>.</p>
 <div class="side-by-side">
   <div><h4>VCL</h4><pre><code>{104906 . has_tradename} . has_ingredient</code></pre></div>
-  <div><h4>compose</h4><pre><code>{"include": [{
+  <div><h4>compose (top-level)</h4><pre><code>{"include": [{
   "system": "...",
   "filter": [{
     "property": "has_ingredient",
     "op": "of",
-    "value": {
-      "filter": [{
-        "property": "has_tradename",
-        "op": "of",
-        "value": "104906"
-      }]
-    }
+    "value": "http://fhir.org/VCL?v1=(...)(104906.has_tradename)"
+  }]
+}]}</code></pre></div>
+</div>
+<div class="side-by-side">
+  <div><h4>VCL URL</h4><pre><code>http://fhir.org/VCL?v1=(...)(104906.has_tradename)</code></pre></div>
+  <div><h4>compose (dependency)</h4><pre><code>{"include": [{
+  "system": "...",
+  "filter": [{
+    "property": "has_tradename",
+    "op": "of",
+    "value": "104906"
   }]
 }]}</code></pre></div>
 </div>
 
 <h3>Nested filter list (in with filter list)</h3>
+<p>Similarly, <code>in</code> or <code>not-in</code> with a filter list emits a VCL URL reference
+to a separate ValueSet containing the nested expression.</p>
 <div class="side-by-side">
   <div><h4>VCL</h4><pre><code>consists_of ^ {has_ingredient = 161}</code></pre></div>
-  <div><h4>compose</h4><pre><code>{"include": [{
+  <div><h4>compose (top-level)</h4><pre><code>{"include": [{
   "system": "...",
   "filter": [{
     "property": "consists_of",
     "op": "in",
-    "value": {
-      "filter": [{
-        "property": "has_ingredient",
-        "op": "=",
-        "value": "161"
-      }]
-    }
+    "value": "http://fhir.org/VCL?v1=(...)(has_ingredient=161)"
+  }]
+}]}</code></pre></div>
+</div>
+<div class="side-by-side">
+  <div><h4>VCL URL</h4><pre><code>http://fhir.org/VCL?v1=(...)(has_ingredient=161)</code></pre></div>
+  <div><h4>compose (dependency)</h4><pre><code>{"include": [{
+  "system": "...",
+  "filter": [{
+    "property": "has_ingredient",
+    "op": "=",
+    "value": "161"
   }]
 }]}</code></pre></div>
 </div>
 <div class="note">
-  Nested filter values for <code>in</code>, <code>not-in</code>, and <code>of</code> are a
-  FHIR R6 extension to <code>ValueSet.compose</code>. In earlier FHIR versions, this nesting
-  is not representable in the compose structure and can only be evaluated by VCL-aware
-  terminology servers.
+  Complex nested expressions in <code>in</code>, <code>not-in</code>, and chained <code>of</code>
+  are represented as references to separate ValueSets identified by VCL URLs
+  (<code>http://fhir.org/VCL?v1=(system)(expression)</code>). A VCL-aware terminology server
+  resolves these URLs by parsing and evaluating the embedded VCL expression. This approach
+  keeps each <code>ValueSet.compose</code> structure flat and compatible with all FHIR versions.
 </div>
 </section>
 

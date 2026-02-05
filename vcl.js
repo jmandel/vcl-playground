@@ -538,110 +538,174 @@ function createEvaluator(DB) {
   return evaluate;
 }
 
-// ==================== AST TO COMPOSE JSON ====================
-function nestedComposeValue(node, system) {
-  if (node.type === 'filter') {
-    const f = { property: node.property, op: node.op };
-    if (typeof node.value === 'string') f.value = node.value;
-    else if (node.value && node.value.type === 'codeList') f.value = node.value.codes.join(',');
-    else if (node.value && node.value.type === 'filterList') f.value = nestedComposeValue(node.value, system);
-    else if (node.value && typeof node.value === 'object' && node.value.type) f.value = nestedComposeValue(node.value, system);
-    else f.value = String(node.value);
-    return { filter: [f] };
-  }
-  if (node.type === 'filterList') {
-    const filters = [];
-    for (const f of node.filters) {
-      // Each element might be a filter, an of-node, or other — delegate to nestedComposeValue
-      const nested = nestedComposeValue(f, system);
-      if (nested.filter) filters.push(...nested.filter);
-      else filters.push(nested);
+// ==================== AST TO VCL TEXT ====================
+function astToVclText(node) {
+  switch (node.type) {
+    case 'code': return node.value;
+    case 'star': return '*';
+    case 'codeList': return '{' + node.codes.join(',') + '}';
+    case 'filter': {
+      const opMap = {'=':'=', 'is-a':'<<', 'is-not-a':'~<<', 'descendent-of':'<',
+        'generalizes':'>>', 'child-of':'<!', 'descendent-leaf':'!!<', 'exists':'?',
+        'regex':'/', 'in':'^', 'not-in':'~^'};
+      const opStr = opMap[node.op] || node.op;
+      if (node.op === 'regex') return node.property + '/"' + node.value + '"';
+      if (node.op === 'in' || node.op === 'not-in') {
+        if (node.value && node.value.type === 'vsRef') return node.property + opStr + node.value.uri;
+        if (node.value && node.value.type === 'codeList') return node.property + opStr + '{' + node.value.codes.join(',') + '}';
+        if (node.value && node.value.type === 'filterList') return node.property + opStr + astToVclText(node.value);
+        return node.property + opStr + astToVclText(node.value);
+      }
+      return node.property + opStr + (typeof node.value === 'string' ? node.value : astToVclText(node.value));
     }
-    return { filter: filters };
-  }
-  if (node.type === 'of') {
-    const f = { property: node.property, op: 'of' };
-    if (node.value.type === 'code') f.value = node.value.value;
-    else if (node.value.type === 'codeList') f.value = node.value.codes.join(',');
-    else f.value = nestedComposeValue(node.value, system);
-    return { filter: [f] };
-  }
-  if (node.type === 'conjunction') {
-    const filters = [];
-    for (const p of node.parts) {
-      const nested = nestedComposeValue(p, system);
-      if (nested.filter) filters.push(...nested.filter);
+    case 'filterList': return '{' + node.filters.map(f => astToVclText(f)).join(',') + '}';
+    case 'of': {
+      const valText = astToVclText(node.value);
+      // Wrap in braces if inner is complex, but filterList/codeList already include braces
+      const needsBraces = node.value.type !== 'code' && node.value.type !== 'star'
+        && node.value.type !== 'filterList' && node.value.type !== 'codeList';
+      return (needsBraces ? '{' + valText + '}' : valText) + '.' + node.property;
     }
-    return { filter: filters };
+    case 'conjunction': return node.parts.map(p => astToVclText(p)).join(',');
+    case 'disjunction': return node.parts.map(p => astToVclText(p)).join(';');
+    case 'exclusion': return '(' + astToVclText(node.include) + ')-(' + astToVclText(node.exclude) + ')';
+    case 'includeVs': return '^' + node.uri;
+    default: return '(?)';
   }
-  if (node.type === 'code') return { concept: [{ code: node.value }] };
-  if (node.type === 'codeList') return { concept: node.codes.map(c => ({ code: c })) };
-  return { _note: `Unsupported nested: ${node.type}` };
 }
 
-function astToCompose(ast, system) {
-  const compose = { include: [], exclude: [] };
+function vclUrl(system, node) {
+  const vclText = astToVclText(node);
+  return 'http://fhir.org/VCL?v1=' + encodeURIComponent('(' + system + ')(' + vclText + ')');
+}
 
-  function filterValue(v) {
+// ==================== AST TO COMPOSE COLLECTION ====================
+function astToComposeCollection(ast, system) {
+  const valueSets = [];
+  const deps = [];
+
+  function isSimpleOfValue(node) {
+    return node.type === 'code' || node.type === 'codeList' || node.type === 'star';
+  }
+
+  function filterValue(v, deps) {
     if (typeof v === 'string') return v;
     if (v && v.type === 'codeList') return v.codes.join(',');
     if (v && v.type === 'code') return v.value;
-    if (v && v.type === 'filterList') return nestedComposeValue(v);
-    if (v && v.type === 'of') return nestedComposeValue(v);
-    if (v && typeof v === 'object' && v.type) return nestedComposeValue(v);
-    return String(v);
+    if (v && v.type === 'vsRef') return v.uri;
+    // Complex nested value — emit as dependency VS and return URL
+    const url = vclUrl(system, v);
+    collectDependency(v, url, deps);
+    return url;
   }
 
-  function addFilters(node, target) {
-    if (node.type === 'filter') {
-      const f = { property: node.property, op: node.op, value: filterValue(node.value) };
-      target.push({ system, filter: [f] });
-    } else if (node.type === 'conjunction') {
-      const filters = [];
-      for (const p of node.parts) {
-        if (p.type === 'filter') {
-          filters.push({ property: p.property, op: p.op, value: filterValue(p.value) });
-        } else if (p.type === 'of') {
-          filters.push({ property: p.property, op: 'of', value: filterValue(p.value) });
-        } else {
-          filters.push({ property: 'vcl', op: '=', value: '(complex)' });
-        }
+  function collectDependency(node, url, deps) {
+    // Check if already collected
+    if (deps.some(d => d.url === url)) return;
+    // Recursively generate compose for this sub-expression
+    const subResult = buildCompose(node, []);
+    deps.push({ url, compose: subResult.compose });
+    // Collect sub-dependencies too
+    for (const subDep of subResult.subDeps) {
+      if (!deps.some(d => d.url === subDep.url)) {
+        deps.push(subDep);
       }
-      target.push({ system, filter: filters });
-    } else if (node.type === 'disjunction') {
-      for (const p of node.parts) addFilters(p, target);
-    } else if (node.type === 'code') {
-      target.push({ system, concept: [{ code: node.value }] });
-    } else if (node.type === 'codeList') {
-      target.push({ system, concept: node.codes.map(c => ({ code: c })) });
-    } else if (node.type === 'star') {
-      target.push({ system });
-    } else if (node.type === 'of') {
-      const f = { property: node.property, op: 'of' };
-      if (node.value.type === 'code') {
-        f.value = node.value.value;
-      } else if (node.value.type === 'codeList') {
-        f.value = node.value.codes.join(',');
-      } else if (node.value.type === 'star') {
-        f.value = '*';
-      } else {
-        f.value = nestedComposeValue(node.value, system);
-      }
-      target.push({ system, filter: [f] });
-    } else {
-      target.push({ system, _note: `Unsupported: ${node.type}` });
     }
   }
 
-  if (ast.type === 'exclusion') {
-    addFilters(ast.include, compose.include);
-    addFilters(ast.exclude, compose.exclude);
-  } else {
-    addFilters(ast, compose.include);
+  function buildCompose(ast, subDeps) {
+    const compose = { include: [], exclude: [] };
+
+    function addFilters(node, target) {
+      if (node.type === 'filter') {
+        const f = { property: node.property, op: node.op, value: filterValue(node.value, subDeps) };
+        target.push({ system, filter: [f] });
+      } else if (node.type === 'conjunction') {
+        const filters = [];
+        for (const p of node.parts) {
+          if (p.type === 'filter') {
+            filters.push({ property: p.property, op: p.op, value: filterValue(p.value, subDeps) });
+          } else if (p.type === 'of') {
+            if (isSimpleOfValue(p.value)) {
+              const v = p.value.type === 'code' ? p.value.value :
+                        p.value.type === 'codeList' ? p.value.codes.join(',') : '*';
+              filters.push({ property: p.property, op: 'of', value: v });
+            } else {
+              const url = vclUrl(system, p.value);
+              collectDependency(p.value, url, subDeps);
+              filters.push({ property: p.property, op: 'of', value: url });
+            }
+          } else {
+            filters.push({ property: 'vcl', op: '=', value: '(complex)' });
+          }
+        }
+        target.push({ system, filter: filters });
+      } else if (node.type === 'disjunction') {
+        for (const p of node.parts) addFilters(p, target);
+      } else if (node.type === 'code') {
+        target.push({ system, concept: [{ code: node.value }] });
+      } else if (node.type === 'codeList') {
+        target.push({ system, concept: node.codes.map(c => ({ code: c })) });
+      } else if (node.type === 'star') {
+        target.push({ system });
+      } else if (node.type === 'of') {
+        const f = { property: node.property, op: 'of' };
+        if (isSimpleOfValue(node.value)) {
+          f.value = node.value.type === 'code' ? node.value.value :
+                    node.value.type === 'codeList' ? node.value.codes.join(',') : '*';
+        } else {
+          const url = vclUrl(system, node.value);
+          collectDependency(node.value, url, subDeps);
+          f.value = url;
+        }
+        target.push({ system, filter: [f] });
+      } else if (node.type === 'filterList') {
+        // A filterList at top level: treat like conjunction of its filters
+        const filters = [];
+        for (const f of node.filters) {
+          if (f.type === 'filter') {
+            filters.push({ property: f.property, op: f.op, value: filterValue(f.value, subDeps) });
+          } else if (f.type === 'of') {
+            if (isSimpleOfValue(f.value)) {
+              const v = f.value.type === 'code' ? f.value.value :
+                        f.value.type === 'codeList' ? f.value.codes.join(',') : '*';
+              filters.push({ property: f.property, op: 'of', value: v });
+            } else {
+              const url = vclUrl(system, f.value);
+              collectDependency(f.value, url, subDeps);
+              filters.push({ property: f.property, op: 'of', value: url });
+            }
+          }
+        }
+        if (filters.length > 0) target.push({ system, filter: filters });
+      } else {
+        target.push({ system, _note: `Unsupported: ${node.type}` });
+      }
+    }
+
+    if (ast.type === 'exclusion') {
+      addFilters(ast.include, compose.include);
+      addFilters(ast.exclude, compose.exclude);
+    } else {
+      addFilters(ast, compose.include);
+    }
+
+    if (compose.exclude.length === 0) delete compose.exclude;
+    return { compose, subDeps };
   }
 
-  if (compose.exclude.length === 0) delete compose.exclude;
-  return compose;
+  const topResult = buildCompose(ast, deps);
+  valueSets.push({ url: null, compose: topResult.compose });
+  for (const dep of deps) {
+    valueSets.push({ url: dep.url, compose: dep.compose });
+  }
+  return { valueSets };
+}
+
+// ==================== AST TO COMPOSE (backward compat wrapper) ====================
+function astToCompose(ast, system) {
+  const { valueSets } = astToComposeCollection(ast, system);
+  return valueSets[0].compose;
 }
 
 // ==================== AST PRETTY PRINTER ====================
@@ -669,4 +733,4 @@ function prettyAST(ast, indent) {
 }
 
 // ==================== EXPORTS ====================
-export { parseVCL, indexData, createEvaluator, astToCompose, prettyAST, nestedComposeValue, ParseError };
+export { parseVCL, indexData, createEvaluator, astToCompose, astToComposeCollection, astToVclText, vclUrl, prettyAST, ParseError };

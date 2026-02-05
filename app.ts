@@ -1,4 +1,4 @@
-import { parseVCL, indexData, createEvaluator, astToCompose, prettyAST } from './vcl.js';
+import { parseVCL, indexData, createEvaluator, astToComposeCollection, prettyAST } from './vcl.js';
 import RXNORM_DATA from './rxnorm-subset.json';
 import EXAMPLES from './examples.json';
 
@@ -45,15 +45,28 @@ function tryExample(name: string) {
 function copyLink() {
   const expr = input.value.trim();
   if (!expr) return;
-  const url = new URL(window.location.href);
-  url.searchParams.set('expr', expr);
-  url.hash = '#playground';
-  navigator.clipboard.writeText(url.toString()).then(() => {
-    const btn = document.getElementById('copy-link-btn')!;
-    btn.textContent = 'Copied!';
+  const base = window.location.href.replace(/#.*$/, '').replace(/\?.*$/, '');
+  const linkUrl = base + '#expr=' + encodeURIComponent(expr);
+  const btn = document.getElementById('copy-link-btn')!;
+  const showCopied = () => {
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
     btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = 'Copy link'; btn.classList.remove('copied'); }, 1500);
-  });
+    setTimeout(() => { btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> Share'; btn.classList.remove('copied'); }, 1500);
+  };
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(linkUrl).then(showCopied).catch(() => {
+      // Fallback for insecure contexts
+      const ta = document.createElement('textarea');
+      ta.value = linkUrl; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+      document.body.removeChild(ta); showCopied();
+    });
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = linkUrl; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta); showCopied();
+  }
 }
 
 function runQuery() {
@@ -107,10 +120,26 @@ function runQuery() {
     resultsBody.innerHTML += `<tr><td colspan="3" style="color:#94a3b8">...and ${sorted.length - maxShow} more</td></tr>`;
   }
 
-  // Compose JSON
+  // Compose JSON — multi-ValueSet output
   try {
-    const compose = astToCompose(ast, system);
-    composeEl.textContent = JSON.stringify(compose, null, 2);
+    const { valueSets } = astToComposeCollection(ast, system);
+    composeEl.innerHTML = '';
+    for (const vs of valueSets) {
+      const header = document.createElement('div');
+      header.style.cssText = 'font-weight:600;font-size:0.85em;color:#64748b;margin:0.75em 0 0.25em;padding:0.3em 0;border-bottom:1px solid #e2e8f0;';
+      if (vs.url === null) {
+        if (valueSets.length > 1) header.textContent = 'Top-level ValueSet';
+        // Skip header for single VS
+      } else {
+        header.textContent = vs.url;
+        header.style.wordBreak = 'break-all';
+      }
+      if (vs.url !== null || valueSets.length > 1) composeEl.appendChild(header);
+      const pre = document.createElement('div');
+      pre.style.cssText = 'white-space:pre;margin-bottom:0.5em;';
+      pre.textContent = JSON.stringify(vs.compose, null, 2);
+      composeEl.appendChild(pre);
+    }
   } catch(e: any) {
     composeEl.textContent = 'Error generating compose: ' + e.message;
   }
@@ -138,17 +167,24 @@ function esc(s: string) {
 (window as any).copyLink = copyLink;
 (window as any).showTab = showTab;
 
-// Pick up expression from URL ?expr= param or localStorage "Try it" links
+// Pick up expression from URL hash (#example=NAME or #expr=ENCODED) or legacy ?expr= param
 {
-  const params = new URLSearchParams(location.search);
-  const urlExpr = params.get('expr');
-  const lsExpr = localStorage.getItem('vcl-try');
-  const expr = urlExpr || (location.hash === '#playground' ? lsExpr : null);
+  let expr: string | null = null;
+  const hash = location.hash.replace(/^#/, '');
+  if (hash.startsWith('example=')) {
+    const name = decodeURIComponent(hash.slice(8));
+    const ex = (EXAMPLES as Record<string, {label: string; expr: string}>)[name];
+    if (ex) expr = ex.expr;
+  } else if (hash.startsWith('expr=')) {
+    expr = decodeURIComponent(hash.slice(5));
+  } else {
+    const params = new URLSearchParams(location.search);
+    expr = params.get('expr');
+  }
   if (expr) {
-    localStorage.removeItem('vcl-try');
     input.value = expr;
     setTimeout(() => { runQuery(); input.focus(); }, 100);
-  } else if (location.hash === '#playground') {
+  } else if (hash === 'playground') {
     setTimeout(() => input.focus(), 100);
   }
 }
