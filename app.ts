@@ -110,11 +110,10 @@ function runQuery() {
   const maxShow = 200;
   const showing = sorted.slice(0, maxShow);
   resultsBody.innerHTML = showing.map((c: any) => `
-    <tr>
+    <tr data-code="${esc(c.code)}">
       <td class="code-cell">${esc(c.code)}</td>
       <td>${esc(c.display)}</td>
       <td><span class="tty tty-${c.tty}">${c.tty}</span></td>
-      <td><button class="info-btn" data-code="${esc(c.code)}" title="Properties">&#9432;</button></td>
     </tr>
   `).join('');
   if (sorted.length > maxShow) {
@@ -162,19 +161,24 @@ function esc(s: string) {
   return s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
 }
 
-function conceptProperties(code: string): string {
+function conceptJson(code: string): string {
   const c = DB.byCode.get(code);
   if (!c) return '';
-  const props: {code: string; valueCode?: string; valueString?: string}[] = [];
-  if (c.tty) props.push({ code: 'tty', valueString: c.tty });
-  if (c.active !== undefined) props.push({ code: 'status', valueString: c.active ? 'active' : 'inactive' });
+  const concept: any = { code: c.code, display: c.display };
+  concept.designation = [];
+  const property: any[] = [];
+  if (c.tty) property.push({ code: 'tty', valueString: c.tty });
+  if (c.active !== undefined) property.push({ code: 'status', valueString: c.active ? 'active' : 'inactive' });
   const edges = DB.edgesBySource.get(code) || [];
   for (const e of edges) {
     const target = DB.byCode.get(e.target);
-    const display = target ? target.display : e.target;
-    props.push({ code: e.property, valueCode: `${e.target} (${display})` });
+    property.push({
+      code: e.property,
+      valueCoding: { code: e.target, display: target ? target.display : undefined }
+    });
   }
-  return JSON.stringify(props, null, 2);
+  concept.property = property;
+  return JSON.stringify(concept, null, 2);
 }
 
 function showPropertiesModal(code: string) {
@@ -190,7 +194,7 @@ function showPropertiesModal(code: string) {
       <button class="prop-modal-close">&times;</button>
     </div>
     <div class="prop-modal-body"></div>`;
-  modal.querySelector('.prop-modal-body')!.textContent = conceptProperties(code);
+  modal.querySelector('.prop-modal-body')!.textContent = conceptJson(code);
   overlay.appendChild(modal);
   const close = () => overlay.remove();
   overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
@@ -202,8 +206,8 @@ function showPropertiesModal(code: string) {
 }
 
 resultsBody.addEventListener('click', (e) => {
-  const btn = (e.target as HTMLElement).closest('.info-btn') as HTMLElement | null;
-  if (btn?.dataset.code) showPropertiesModal(btn.dataset.code);
+  const row = (e.target as HTMLElement).closest('tr[data-code]') as HTMLElement | null;
+  if (row?.dataset.code) showPropertiesModal(row.dataset.code);
 });
 
 // Generate compose examples from data-vcl-compose attributes
