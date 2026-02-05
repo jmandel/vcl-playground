@@ -150,7 +150,7 @@ nav a:hover { color: var(--accent); }
   <a href="#building-blocks">Building Blocks</a>
   <a href="#worked-examples">Worked Examples</a>
   <a href="#operators">Operators</a>
-  <a href="#compose-mapping">VCL &harr; Compose</a>
+  <a href="#further-reading">Further Reading</a>
 </nav>
 
 <div class="container">
@@ -495,54 +495,16 @@ nav a:hover { color: var(--accent); }
 <p>Grouping: <code>(</code>...<code>)</code> for sub-expressions, <code>{</code>...<code>}</code> for nested filter lists and code lists.</p>
 </section>
 
-<!-- ============================== COMPOSE MAPPING ============================== -->
-<section id="compose-mapping">
-<h2>VCL &harr; ValueSet.compose</h2>
-<p>VCL maps directly to FHIR's <code>ValueSet.compose</code> structure. Here are side-by-side examples:</p>
-
-<h3>Simple filter</h3>
-<div class="side-by-side">
-  <div><h4>VCL</h4><pre><code>has_ingredient=161</code></pre></div>
-  <div><h4>ValueSet.compose</h4><pre><code data-vcl-compose="has_ingredient=161"></code></pre></div>
-</div>
-
-<h3>AND (conjunction) &mdash; multiple filters</h3>
-<div class="side-by-side">
-  <div><h4>VCL</h4><pre><code>has_ingredient=161, has_dose_form=317541</code></pre></div>
-  <div><h4>ValueSet.compose</h4><pre><code data-vcl-compose="has_ingredient=161,has_dose_form=317541"></code></pre></div>
-</div>
-
-<h3>OR (disjunction) &mdash; separate includes</h3>
-<div class="side-by-side">
-  <div><h4>VCL</h4><pre><code>has_ingredient=161; has_ingredient=5640</code></pre></div>
-  <div><h4>ValueSet.compose</h4><pre><code data-vcl-compose="has_ingredient=161;has_ingredient=5640"></code></pre></div>
-</div>
-
-<h3>Exclusion</h3>
-<div class="side-by-side">
-  <div><h4>VCL</h4><pre><code>(has_ingredient=161)-(has_ingredient=5489)</code></pre></div>
-  <div><h4>ValueSet.compose</h4><pre><code data-vcl-compose="(has_ingredient=161)-(has_ingredient=5489)"></code></pre></div>
-</div>
-</section>
-
-<!-- ============================== IMPLICIT URIs ============================== -->
-<section id="implicit-uris">
-<h2>Implicit ValueSet URIs</h2>
-<p>VCL expressions can be packaged as <strong>implicit ValueSet URIs</strong> that terminology servers
-can resolve directly with <code>$expand</code>:</p>
-<pre><code>http://fhir.org/VCL?v1=(http://www.nlm.nih.gov/research/umls/rxnorm)(has_ingredient%3D161%2Chas_dose_form%3D317541)</code></pre>
-<p>Structure:</p>
+<!-- ============================== FURTHER READING ============================== -->
+<section id="further-reading">
+<h2>Further Reading</h2>
+<p>The <a href="index.html">VCL Specification</a> covers the full language definition, including:</p>
 <ul>
-  <li>Base: <code>http://fhir.org/VCL</code></li>
-  <li>Query: <code>?v1=[percent-encoded VCL expression]</code></li>
-  <li>The expression <strong>must</strong> include system scoping (the parenthesized URI prefix)</li>
+  <li><a href="index.html#compose-mapping">Mapping VCL to <code>ValueSet.compose</code></a> &mdash; you can also see this live in the playground's "ValueSet.compose" tab</li>
+  <li><a href="index.html#implicit-uris">Implicit ValueSet URIs</a> &mdash; packaging VCL expressions as URIs for use with <code>$expand</code></li>
+  <li><a href="index.html#grammar">Formal grammar</a></li>
 </ul>
-<p>Usage with <code>$expand</code>:</p>
-<pre><code>GET [tx-server]/ValueSet/$expand?url=http://fhir.org/VCL?v1=...</code></pre>
-<p>Servers decode the expression, parse it, evaluate it against the referenced code system, and return the expanded ValueSet.</p>
 </section>
-
-<!-- Grammar is in the spec page, not duplicated here -->
 
 </div><!-- /content-col -->
 
