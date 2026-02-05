@@ -84,10 +84,11 @@ td code { white-space: nowrap; }
   padding: 0.5em 0.75em 0; user-select: none; }
 #playground-input { width: 100%; font-family: var(--mono); font-size: 1em; padding: 0.4em 0.75em 0.6em;
   background: transparent; color: var(--fg); border: none; outline: none; }
-#copy-link-btn { position: absolute; top: 0.4em; right: 0.4em; background: var(--code-bg); border: 1px solid var(--border);
-  border-radius: 4px; padding: 0.2em 0.5em; font-size: 0.72em; color: var(--muted); cursor: pointer; font-family: var(--font);
-  transition: all 0.15s; z-index: 1; }
-#copy-link-btn:hover { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
+#share-row { display: flex; align-items: center; gap: 0.5em; margin: 0.4em 0; }
+#copy-link-btn { background: var(--accent-light); border: 1px solid var(--accent); color: var(--accent);
+  border-radius: 4px; padding: 0.3em 0.7em; font-size: 0.8em; cursor: pointer; font-family: var(--font);
+  font-weight: 500; transition: all 0.15s; white-space: nowrap; }
+#copy-link-btn:hover { background: var(--accent); color: white; }
 #copy-link-btn.copied { background: #dcfce7; color: var(--success); border-color: var(--success); }
 #playground-error { color: var(--error); font-family: var(--mono); font-size: 0.8em; margin: 0.4em 0; min-height: 1.2em; }
 #playground-info { color: var(--muted); font-size: 0.8em; margin: 0.25em 0; min-height: 1.2em; }
@@ -626,10 +627,12 @@ can resolve directly with <code>$expand</code>:</p>
   <div id="playground-input-wrap">
     <span id="playground-system-prefix">(http://www.nlm.nih.gov/research/umls/rxnorm)</span>
     <input id="playground-input" type="text" placeholder="Type a VCL expression..." spellcheck="false" autocomplete="off">
-    <button id="copy-link-btn" onclick="copyLink()" title="Copy shareable link">Copy link</button>
+  </div>
+  <div id="share-row">
+    <button id="copy-link-btn" onclick="copyLink()" title="Copy shareable link">Share link</button>
+    <span id="playground-info"></span>
   </div>
   <div id="playground-error"></div>
-  <div id="playground-info"></div>
 
   <div class="pg-tabs">
     <button class="pg-tab active" onclick="showTab('results')">Results</button>
