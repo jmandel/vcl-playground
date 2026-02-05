@@ -109,15 +109,14 @@ function runQuery() {
   resultsCount.textContent = `${sorted.length} result${sorted.length !== 1 ? 's' : ''}`;
   const maxShow = 200;
   const showing = sorted.slice(0, maxShow);
-  resultsBody.innerHTML = showing.map((c: any) => {
-    const props = conceptProperties(c.code);
-    return `
+  resultsBody.innerHTML = showing.map((c: any) => `
     <tr>
-      <td class="code-cell">${esc(c.code)}<div class="code-tooltip">${esc(props)}</div></td>
+      <td class="code-cell">${esc(c.code)}</td>
       <td>${esc(c.display)}</td>
       <td><span class="tty tty-${c.tty}">${c.tty}</span></td>
-    </tr>`;
-  }).join('');
+      <td><button class="info-btn" data-code="${esc(c.code)}" title="Properties">&#9432;</button></td>
+    </tr>
+  `).join('');
   if (sorted.length > maxShow) {
     resultsBody.innerHTML += `<tr><td colspan="3" style="color:#94a3b8">...and ${sorted.length - maxShow} more</td></tr>`;
   }
@@ -177,6 +176,35 @@ function conceptProperties(code: string): string {
   }
   return JSON.stringify(props, null, 2);
 }
+
+function showPropertiesModal(code: string) {
+  const c = DB.byCode.get(code);
+  if (!c) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'prop-overlay';
+  const modal = document.createElement('div');
+  modal.className = 'prop-modal';
+  modal.innerHTML = `
+    <div class="prop-modal-header">
+      <span>${esc(c.code)} &mdash; ${esc(c.display)}</span>
+      <button class="prop-modal-close">&times;</button>
+    </div>
+    <div class="prop-modal-body"></div>`;
+  modal.querySelector('.prop-modal-body')!.textContent = conceptProperties(code);
+  overlay.appendChild(modal);
+  const close = () => overlay.remove();
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+  modal.querySelector('.prop-modal-close')!.addEventListener('click', close);
+  document.addEventListener('keydown', function handler(e) {
+    if (e.key === 'Escape') { close(); document.removeEventListener('keydown', handler); }
+  });
+  document.body.appendChild(overlay);
+}
+
+resultsBody.addEventListener('click', (e) => {
+  const btn = (e.target as HTMLElement).closest('.info-btn') as HTMLElement | null;
+  if (btn?.dataset.code) showPropertiesModal(btn.dataset.code);
+});
 
 // Generate compose examples from data-vcl-compose attributes
 document.querySelectorAll<HTMLElement>('[data-vcl-compose]').forEach(el => {
