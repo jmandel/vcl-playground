@@ -502,89 +502,26 @@ nav a:hover { color: var(--accent); }
 
 <h3>Simple filter</h3>
 <div class="side-by-side">
-  <div>
-    <h4>VCL</h4>
-    <pre><code>has_ingredient=161</code></pre>
-  </div>
-  <div>
-    <h4>ValueSet.compose</h4>
-    <pre><code>{
-  "include": [{
-    "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
-    "filter": [{
-      "property": "has_ingredient",
-      "op": "=",
-      "value": "161"
-    }]
-  }]
-}</code></pre>
-  </div>
+  <div><h4>VCL</h4><pre><code>has_ingredient=161</code></pre></div>
+  <div><h4>ValueSet.compose</h4><pre><code data-vcl-compose="has_ingredient=161"></code></pre></div>
 </div>
 
 <h3>AND (conjunction) &mdash; multiple filters</h3>
 <div class="side-by-side">
-  <div>
-    <h4>VCL</h4>
-    <pre><code>has_ingredient=161, has_dose_form=317541</code></pre>
-  </div>
-  <div>
-    <h4>ValueSet.compose</h4>
-    <pre><code>{
-  "include": [{
-    "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
-    "filter": [
-      { "property": "has_ingredient",
-        "op": "=", "value": "161" },
-      { "property": "has_dose_form",
-        "op": "=", "value": "317541" }
-    ]
-  }]
-}</code></pre>
-  </div>
+  <div><h4>VCL</h4><pre><code>has_ingredient=161, has_dose_form=317541</code></pre></div>
+  <div><h4>ValueSet.compose</h4><pre><code data-vcl-compose="has_ingredient=161,has_dose_form=317541"></code></pre></div>
 </div>
 
 <h3>OR (disjunction) &mdash; separate includes</h3>
 <div class="side-by-side">
-  <div>
-    <h4>VCL</h4>
-    <pre><code>has_ingredient=161; has_ingredient=5640</code></pre>
-  </div>
-  <div>
-    <h4>ValueSet.compose</h4>
-    <pre><code>{
-  "include": [
-    { "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
-      "filter": [{ "property": "has_ingredient",
-        "op": "=", "value": "161" }] },
-    { "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
-      "filter": [{ "property": "has_ingredient",
-        "op": "=", "value": "5640" }] }
-  ]
-}</code></pre>
-  </div>
+  <div><h4>VCL</h4><pre><code>has_ingredient=161; has_ingredient=5640</code></pre></div>
+  <div><h4>ValueSet.compose</h4><pre><code data-vcl-compose="has_ingredient=161;has_ingredient=5640"></code></pre></div>
 </div>
 
 <h3>Exclusion</h3>
 <div class="side-by-side">
-  <div>
-    <h4>VCL</h4>
-    <pre><code>(has_ingredient=161)-(has_ingredient=5489)</code></pre>
-  </div>
-  <div>
-    <h4>ValueSet.compose</h4>
-    <pre><code>{
-  "include": [{
-    "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
-    "filter": [{ "property": "has_ingredient",
-      "op": "=", "value": "161" }]
-  }],
-  "exclude": [{
-    "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
-    "filter": [{ "property": "has_ingredient",
-      "op": "=", "value": "5489" }]
-  }]
-}</code></pre>
-  </div>
+  <div><h4>VCL</h4><pre><code>(has_ingredient=161)-(has_ingredient=5489)</code></pre></div>
+  <div><h4>ValueSet.compose</h4><pre><code data-vcl-compose="(has_ingredient=161)-(has_ingredient=5489)"></code></pre></div>
 </div>
 </section>
 

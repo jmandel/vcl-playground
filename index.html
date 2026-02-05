@@ -592,14 +592,7 @@ dd { margin-left: 1.5em; margin-bottom: 0.5em; }
 <h3>Single filter</h3>
 <div class="side-by-side">
   <div><h4>VCL</h4><pre><code>has_ingredient = 161</code></pre></div>
-  <div><h4>compose</h4><pre><code>{"include": [{
-  "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
-  "filter": [{
-    "property": "has_ingredient",
-    "op": "=",
-    "value": "161"
-  }]
-}]}</code></pre></div>
+  <div><h4>compose</h4><pre><code data-vcl-compose="has_ingredient=161"></code></pre></div>
 </div>
 
 <h3>Conjunction (AND)</h3>
@@ -608,15 +601,7 @@ dd { margin-left: 1.5em; margin-bottom: 0.5em; }
 <div class="side-by-side">
   <div><h4>VCL</h4><pre><code>has_ingredient=161,
 has_dose_form=317541</code></pre></div>
-  <div><h4>compose</h4><pre><code>{"include": [{
-  "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
-  "filter": [
-    {"property": "has_ingredient",
-     "op": "=", "value": "161"},
-    {"property": "has_dose_form",
-     "op": "=", "value": "317541"}
-  ]
-}]}</code></pre></div>
+  <div><h4>compose</h4><pre><code data-vcl-compose="has_ingredient=161,has_dose_form=317541"></code></pre></div>
 </div>
 
 <h3>Disjunction (OR)</h3>
@@ -624,14 +609,7 @@ has_dose_form=317541</code></pre></div>
 <div class="side-by-side">
   <div><h4>VCL</h4><pre><code>has_ingredient=161;
 has_ingredient=5640</code></pre></div>
-  <div><h4>compose</h4><pre><code>{"include": [
-  {"system": "http://www.nlm.nih.gov/research/umls/rxnorm", "filter": [{
-    "property": "has_ingredient",
-    "op": "=", "value": "161"}]},
-  {"system": "http://www.nlm.nih.gov/research/umls/rxnorm", "filter": [{
-    "property": "has_ingredient",
-    "op": "=", "value": "5640"}]}
-]}</code></pre></div>
+  <div><h4>compose</h4><pre><code data-vcl-compose="has_ingredient=161;has_ingredient=5640"></code></pre></div>
 </div>
 
 <h3>Exclusion</h3>
@@ -639,16 +617,7 @@ has_ingredient=5640</code></pre></div>
 <div class="side-by-side">
   <div><h4>VCL</h4><pre><code>(has_ingredient=161) -
 (has_ingredient=5489)</code></pre></div>
-  <div><h4>compose</h4><pre><code>{"include": [{
-  "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
-  "filter": [{"property": "has_ingredient",
-    "op": "=", "value": "161"}]
-}],
-"exclude": [{
-  "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
-  "filter": [{"property": "has_ingredient",
-    "op": "=", "value": "5489"}]
-}]}</code></pre></div>
+  <div><h4>compose</h4><pre><code data-vcl-compose="(has_ingredient=161)-(has_ingredient=5489)"></code></pre></div>
 </div>
 
 <h3>System scoping</h3>
@@ -656,37 +625,19 @@ has_ingredient=5640</code></pre></div>
 <div class="side-by-side">
   <div><h4>VCL</h4><pre><code>(http://loinc.org)(SCALE_TYP=Doc);
 (http://snomed.info/sct)(concept&lt;&lt;404684003)</code></pre></div>
-  <div><h4>compose</h4><pre><code>{"include": [
-  {"system": "http://loinc.org",
-   "filter": [{"property": "SCALE_TYP",
-     "op": "=", "value": "Doc"}]},
-  {"system": "http://snomed.info/sct",
-   "filter": [{"property": "concept",
-     "op": "is-a", "value": "404684003"}]}
-]}</code></pre></div>
+  <div><h4>compose</h4><pre><code data-vcl-compose="(http://loinc.org)(SCALE_TYP=Doc);(http://snomed.info/sct)(concept<<404684003)"></code></pre></div>
 </div>
 
 <h3>ValueSet include</h3>
 <div class="side-by-side">
   <div><h4>VCL</h4><pre><code>^http://hl7.org/fhir/ValueSet/payeetype</code></pre></div>
-  <div><h4>compose</h4><pre><code>{"include": [{
-  "valueSet": [
-    "http://hl7.org/fhir/ValueSet/payeetype"
-  ]
-}]}</code></pre></div>
+  <div><h4>compose</h4><pre><code data-vcl-compose="^http://hl7.org/fhir/ValueSet/payeetype"></code></pre></div>
 </div>
 
 <h3>The "of" operator (single hop)</h3>
 <div class="side-by-side">
   <div><h4>VCL</h4><pre><code>104906 . has_tradename</code></pre></div>
-  <div><h4>compose</h4><pre><code>{"include": [{
-  "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
-  "filter": [{
-    "property": "has_tradename",
-    "op": "of",
-    "value": "104906"
-  }]
-}]}</code></pre></div>
+  <div><h4>compose</h4><pre><code data-vcl-compose="104906.has_tradename"></code></pre></div>
 </div>
 
 <h3>The "of" operator (chained multi-hop)</h3>
@@ -695,25 +646,7 @@ a separate ValueSet via a <strong>VCL URL</strong>. The inner expression becomes
 identified by <code>http://fhir.org/VCL?v1=(system)(expression)</code>.</p>
 <div class="side-by-side">
   <div><h4>VCL</h4><pre><code>{104906 . has_tradename} . has_ingredient</code></pre></div>
-  <div><h4>compose (top-level)</h4><pre><code>{"include": [{
-  "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
-  "filter": [{
-    "property": "has_ingredient",
-    "op": "of",
-    "value": "http://fhir.org/VCL?v1=(http%3A%2F%2Fwww.nlm.nih.gov%2Fresearch%2Fumls%2Frxnorm)(104906.has_tradename)"
-  }]
-}]}</code></pre></div>
-</div>
-<div class="side-by-side">
-  <div><h4>VCL URL</h4><pre><code>http://fhir.org/VCL?v1=(http%3A%2F%2Fwww.nlm.nih.gov%2Fresearch%2Fumls%2Frxnorm)(104906.has_tradename)</code></pre></div>
-  <div><h4>compose (dependency)</h4><pre><code>{"include": [{
-  "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
-  "filter": [{
-    "property": "has_tradename",
-    "op": "of",
-    "value": "104906"
-  }]
-}]}</code></pre></div>
+  <div><h4>compose</h4><pre><code data-vcl-compose="{104906.has_tradename}.has_ingredient"></code></pre></div>
 </div>
 
 <h3>Nested filter list (in with filter list)</h3>
@@ -721,25 +654,7 @@ identified by <code>http://fhir.org/VCL?v1=(system)(expression)</code>.</p>
 to a separate ValueSet containing the nested expression.</p>
 <div class="side-by-side">
   <div><h4>VCL</h4><pre><code>consists_of ^ {has_ingredient = 161}</code></pre></div>
-  <div><h4>compose (top-level)</h4><pre><code>{"include": [{
-  "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
-  "filter": [{
-    "property": "consists_of",
-    "op": "in",
-    "value": "http://fhir.org/VCL?v1=(http%3A%2F%2Fwww.nlm.nih.gov%2Fresearch%2Fumls%2Frxnorm)(has_ingredient=161)"
-  }]
-}]}</code></pre></div>
-</div>
-<div class="side-by-side">
-  <div><h4>VCL URL</h4><pre><code>http://fhir.org/VCL?v1=(http%3A%2F%2Fwww.nlm.nih.gov%2Fresearch%2Fumls%2Frxnorm)(has_ingredient=161)</code></pre></div>
-  <div><h4>compose (dependency)</h4><pre><code>{"include": [{
-  "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
-  "filter": [{
-    "property": "has_ingredient",
-    "op": "=",
-    "value": "161"
-  }]
-}]}</code></pre></div>
+  <div><h4>compose</h4><pre><code data-vcl-compose="consists_of^{has_ingredient=161}"></code></pre></div>
 </div>
 <div class="note">
   Complex nested expressions in <code>in</code>, <code>not-in</code>, and chained <code>of</code>
@@ -811,5 +726,6 @@ to a separate ValueSet containing the nested expression.</p>
 </section>
 
 </div><!-- /.container -->
+<script type="module" src="./spec-app.ts"></script>
 </body>
 </html>

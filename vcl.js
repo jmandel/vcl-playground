@@ -617,9 +617,10 @@ function astToComposeCollection(ast, system) {
     const compose = { include: [], exclude: [] };
 
     function addFilters(node, target) {
+      const sys = node.systemUri || system;
       if (node.type === 'filter') {
         const f = { property: node.property, op: node.op, value: filterValue(node.value, subDeps) };
-        target.push({ system, filter: [f] });
+        target.push({ system: sys, filter: [f] });
       } else if (node.type === 'conjunction') {
         const filters = [];
         for (const p of node.parts) {
@@ -631,7 +632,7 @@ function astToComposeCollection(ast, system) {
                         p.value.type === 'codeList' ? p.value.codes.join(',') : '*';
               filters.push({ property: p.property, op: 'of', value: v });
             } else {
-              const url = vclUrl(system, p.value);
+              const url = vclUrl(sys, p.value);
               collectDependency(p.value, url, subDeps);
               filters.push({ property: p.property, op: 'of', value: url });
             }
@@ -639,26 +640,28 @@ function astToComposeCollection(ast, system) {
             filters.push({ property: 'vcl', op: '=', value: '(complex)' });
           }
         }
-        target.push({ system, filter: filters });
+        target.push({ system: sys, filter: filters });
       } else if (node.type === 'disjunction') {
         for (const p of node.parts) addFilters(p, target);
       } else if (node.type === 'code') {
-        target.push({ system, concept: [{ code: node.value }] });
+        target.push({ system: sys, concept: [{ code: node.value }] });
       } else if (node.type === 'codeList') {
-        target.push({ system, concept: node.codes.map(c => ({ code: c })) });
+        target.push({ system: sys, concept: node.codes.map(c => ({ code: c })) });
       } else if (node.type === 'star') {
-        target.push({ system });
+        target.push({ system: sys });
       } else if (node.type === 'of') {
         const f = { property: node.property, op: 'of' };
         if (isSimpleOfValue(node.value)) {
           f.value = node.value.type === 'code' ? node.value.value :
                     node.value.type === 'codeList' ? node.value.codes.join(',') : '*';
         } else {
-          const url = vclUrl(system, node.value);
+          const url = vclUrl(sys, node.value);
           collectDependency(node.value, url, subDeps);
           f.value = url;
         }
-        target.push({ system, filter: [f] });
+        target.push({ system: sys, filter: [f] });
+      } else if (node.type === 'includeVs') {
+        target.push({ valueSet: [node.uri] });
       } else if (node.type === 'filterList') {
         // A filterList at top level: treat like conjunction of its filters
         const filters = [];
@@ -671,15 +674,15 @@ function astToComposeCollection(ast, system) {
                         f.value.type === 'codeList' ? f.value.codes.join(',') : '*';
               filters.push({ property: f.property, op: 'of', value: v });
             } else {
-              const url = vclUrl(system, f.value);
+              const url = vclUrl(sys, f.value);
               collectDependency(f.value, url, subDeps);
               filters.push({ property: f.property, op: 'of', value: url });
             }
           }
         }
-        if (filters.length > 0) target.push({ system, filter: filters });
+        if (filters.length > 0) target.push({ system: sys, filter: filters });
       } else {
-        target.push({ system, _note: `Unsupported: ${node.type}` });
+        target.push({ system: sys, _note: `Unsupported: ${node.type}` });
       }
     }
 
