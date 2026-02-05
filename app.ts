@@ -109,13 +109,15 @@ function runQuery() {
   resultsCount.textContent = `${sorted.length} result${sorted.length !== 1 ? 's' : ''}`;
   const maxShow = 200;
   const showing = sorted.slice(0, maxShow);
-  resultsBody.innerHTML = showing.map((c: any) => `
+  resultsBody.innerHTML = showing.map((c: any) => {
+    const props = conceptProperties(c.code);
+    return `
     <tr>
-      <td class="code-cell" onclick="tryVCL('${c.code}')">${esc(c.code)}</td>
+      <td class="code-cell">${esc(c.code)}<div class="code-tooltip">${esc(props)}</div></td>
       <td>${esc(c.display)}</td>
       <td><span class="tty tty-${c.tty}">${c.tty}</span></td>
-    </tr>
-  `).join('');
+    </tr>`;
+  }).join('');
   if (sorted.length > maxShow) {
     resultsBody.innerHTML += `<tr><td colspan="3" style="color:#94a3b8">...and ${sorted.length - maxShow} more</td></tr>`;
   }
@@ -159,6 +161,21 @@ function showTab(name: string) {
 
 function esc(s: string) {
   return s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
+}
+
+function conceptProperties(code: string): string {
+  const c = DB.byCode.get(code);
+  if (!c) return '';
+  const props: {code: string; valueCode?: string; valueString?: string}[] = [];
+  if (c.tty) props.push({ code: 'tty', valueString: c.tty });
+  if (c.active !== undefined) props.push({ code: 'status', valueString: c.active ? 'active' : 'inactive' });
+  const edges = DB.edgesBySource.get(code) || [];
+  for (const e of edges) {
+    const target = DB.byCode.get(e.target);
+    const display = target ? target.display : e.target;
+    props.push({ code: e.property, valueCode: `${e.target} (${display})` });
+  }
+  return JSON.stringify(props, null, 2);
 }
 
 // Generate compose examples from data-vcl-compose attributes

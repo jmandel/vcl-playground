@@ -105,8 +105,15 @@ td code { white-space: nowrap; }
 #results-table th { background: var(--code-bg); color: var(--muted); padding: 0.4em 0.6em; position: sticky; top: 0; text-align: left; }
 #results-table td { padding: 0.35em 0.6em; border-bottom: 1px solid var(--border); }
 #results-table tr:hover { background: var(--accent-light); }
-#results-table .code-cell { font-family: var(--mono); cursor: pointer; color: var(--accent); }
-#results-table .code-cell:hover { text-decoration: underline; }
+#results-table .code-cell { font-family: var(--mono); position: relative; }
+.code-tooltip {
+  display: none; position: absolute; left: 0; top: 100%; z-index: 200;
+  background: #1e293b; color: #e2e8f0; font-family: var(--mono); font-size: 0.78em;
+  padding: 0.6em 0.8em; border-radius: 6px; white-space: pre; line-height: 1.5;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25); pointer-events: none; max-width: 500px;
+  overflow-x: auto;
+}
+.code-cell:hover .code-tooltip { display: block; }
 #results-count { color: var(--muted); font-size: 0.8em; margin: 0.4em 0; }
 
 /* Tabs in playground */
