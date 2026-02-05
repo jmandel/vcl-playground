@@ -1,16 +1,23 @@
 #!/usr/bin/env bash
-# Build the VCL tutorial by injecting RxNorm data into the HTML template.
+# Build the VCL tutorial:
+# 1. Run tests to verify all examples return results and no [object Object]
+# 2. Bundle HTML + TS + JSON with bun build
 set -euo pipefail
 DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$DIR"
 
-python3 -c "
-import json
-with open('$DIR/rxnorm-subset.json') as f:
-    data = f.read().strip()
-with open('$DIR/vcl-tutorial-template.html') as f:
-    html = f.read()
-html = html.replace('\"__RXNORM_DATA_PLACEHOLDER__\"', data, 1)
-with open('$DIR/vcl-tutorial.html', 'w') as f:
-    f.write(html)
-print(f'Built: vcl-tutorial.html ({len(html):,} bytes)')
-"
+echo "Running tests..."
+bun test vcl.test.js
+echo ""
+
+echo "Building..."
+rm -rf dist
+bun build vcl-tutorial-template.html --outdir=dist
+
+# Copy built files to project root for serving / GitHub Pages
+cp dist/vcl-tutorial-template.html vcl-tutorial.html
+cp dist/*.js ./ 2>/dev/null || true
+
+echo ""
+echo "Built files:"
+ls -lh vcl-tutorial.html dist/*.js

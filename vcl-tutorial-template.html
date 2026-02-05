@@ -84,6 +84,11 @@ td code { white-space: nowrap; }
   padding: 0.5em 0.75em 0; user-select: none; }
 #playground-input { width: 100%; font-family: var(--mono); font-size: 1em; padding: 0.4em 0.75em 0.6em;
   background: transparent; color: var(--fg); border: none; outline: none; }
+#copy-link-btn { position: absolute; top: 0.4em; right: 0.4em; background: var(--code-bg); border: 1px solid var(--border);
+  border-radius: 4px; padding: 0.2em 0.5em; font-size: 0.72em; color: var(--muted); cursor: pointer; font-family: var(--font);
+  transition: all 0.15s; z-index: 1; }
+#copy-link-btn:hover { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
+#copy-link-btn.copied { background: #dcfce7; color: var(--success); border-color: var(--success); }
 #playground-error { color: var(--error); font-family: var(--mono); font-size: 0.8em; margin: 0.4em 0; min-height: 1.2em; }
 #playground-info { color: var(--muted); font-size: 0.8em; margin: 0.25em 0; min-height: 1.2em; }
 
@@ -232,20 +237,20 @@ nav a:hover { color: var(--accent); }
   <rect x="65" y="170" width="40" height="17" rx="3" fill="#059669"/>
   <text x="85" y="183" text-anchor="middle" class="b">SCDC</text>
   <text x="111" y="183" class="lb">Drug Component</text>
-  <text x="140" y="202" class="ex">acetaminophen 500 MG</text>
-  <text x="140" y="217" class="cd">(315266)</text>
+  <text x="140" y="202" class="ex">acetaminophen 24 MG/ML</text>
+  <text x="140" y="217" class="cd">(315256)</text>
 
   <rect x="375" y="170" width="32" height="17" rx="3" fill="#2563eb"/>
   <text x="391" y="183" text-anchor="middle" class="b">SCD</text>
   <text x="413" y="183" class="lb">Clinical Drug</text>
-  <text x="440" y="202" class="ex">acetaminophen 500 MG Oral Tablet</text>
-  <text x="440" y="217" class="cd">(198440)</text>
+  <text x="440" y="202" class="ex">acetaminophen 24 MG/ML Oral Solution</text>
+  <text x="440" y="217" class="cd">(104906)</text>
 
   <rect x="668" y="170" width="32" height="17" rx="3" fill="#db2777"/>
   <text x="684" y="183" text-anchor="middle" class="b">SBD</text>
   <text x="706" y="183" class="lb">Branded Drug</text>
-  <text x="730" y="202" class="ex">acetaminophen 500 MG Oral Tablet [Tylenol]</text>
-  <text x="730" y="217" class="cd">(209459)</text>
+  <text x="730" y="202" class="ex">acetaminophen 24 MG/ML Oral Solution [Aceta]</text>
+  <text x="730" y="217" class="cd">(209392)</text>
 
   <!-- ═══ HORIZONTAL ARROWS ═══ -->
   <!-- SCD → SCDC (consists_of, pointing LEFT) -->
@@ -293,8 +298,8 @@ nav a:hover { color: var(--accent); }
   <pre><code>161</code></pre>
   <p>This matches the single concept with code <code>161</code> &mdash; acetaminophen. If a code contains
   special characters, quote it: <code>"161"</code> or <code>"J45.0"</code>.</p>
-  <div class="try-it"><button class="try-btn" onclick="tryVCL('161')">Try: 161</button>
-  <button class="try-btn" onclick="tryVCL('317541')">Try: 317541</button></div>
+  <div class="try-it"><button class="try-btn" onclick="tryExample('code-161')">Try: 161</button>
+  <button class="try-btn" onclick="tryExample('code-317541')">Try: 317541</button></div>
 </div>
 
 <div class="step">
@@ -307,9 +312,9 @@ nav a:hover { color: var(--accent); }
   <pre><code>TTY = SCD</code></pre>
   <p>This matches all Semantic Clinical Drugs in the dataset.</p>
   <div class="try-it">
-    <button class="try-btn" onclick="tryVCL('has_ingredient=161')">Try: has_ingredient=161</button>
-    <button class="try-btn" onclick="tryVCL('TTY=SCD')">Try: TTY=SCD</button>
-    <button class="try-btn" onclick="tryVCL('has_dose_form=317541')">Try: has_dose_form=317541</button>
+    <button class="try-btn" onclick="tryExample('filter-ingredient')">Try: has_ingredient=161</button>
+    <button class="try-btn" onclick="tryExample('filter-tty')">Try: TTY=SCD</button>
+    <button class="try-btn" onclick="tryExample('filter-dose-form')">Try: has_dose_form=317541</button>
   </div>
 </div>
 
@@ -317,17 +322,16 @@ nav a:hover { color: var(--accent); }
   <h3>Step 3: The "of" operator &mdash; <code>value.property</code> (dot navigation)</h3>
   <p>The dot <code>.</code> reverses the direction. Instead of "find things with this property", it says
   "start at this code, follow this property outward":</p>
-  <pre><code>198440.has_tradename</code></pre>
-  <p>Start at acetaminophen 500 MG Oral Tablet (198440), follow <code>has_tradename</code> edges
+  <pre><code>104906.has_tradename</code></pre>
+  <p>Start at acetaminophen 24 MG/ML Oral Solution (104906), follow <code>has_tradename</code> edges
   &rarr; returns all branded versions of that drug.</p>
   <p>Chain dots with curly braces for multi-hop traversal:</p>
-  <pre><code>{198440.has_tradename}.has_ingredient</code></pre>
+  <pre><code>{104906.has_tradename}.has_ingredient</code></pre>
   <p>Start at an SCD &rarr; follow <code>has_tradename</code> to get SBDs &rarr; follow <code>has_ingredient</code>
   to get the brand names associated with those branded drugs.</p>
   <div class="try-it">
-    <button class="try-btn" onclick="tryVCL('198440.has_tradename')">Try: 198440.has_tradename</button>
-    <button class="try-btn" onclick="tryVCL('{198440.has_tradename}.has_ingredient')">Try: {198440.has_tradename}.has_ingredient</button>
-    <button class="try-btn" onclick="tryVCL('{198440.has_dose_form}.has_dose_form')">Try: {198440.has_dose_form}.has_dose_form</button>
+    <button class="try-btn" onclick="tryExample('of-tradename')">Try: 104906.has_tradename</button>
+    <button class="try-btn" onclick="tryExample('of-chained')">Try: {104906.has_tradename}.has_ingredient</button>
   </div>
 </div>
 
@@ -341,8 +345,8 @@ nav a:hover { color: var(--accent); }
   <p><em>Concepts that have ingredient acetaminophen OR ibuprofen.</em></p>
   <p>Use parentheses to group: <code>(A,B);(C,D)</code> means "(A and B) or (C and D)".</p>
   <div class="try-it">
-    <button class="try-btn" onclick="tryVCL('has_ingredient=161,has_dose_form=317541')">Try: AND</button>
-    <button class="try-btn" onclick="tryVCL('has_ingredient=161;has_ingredient=5640')">Try: OR</button>
+    <button class="try-btn" onclick="tryExample('and-ingredient-df')">Try: AND</button>
+    <button class="try-btn" onclick="tryExample('or-ingredients')">Try: OR</button>
   </div>
 </div>
 
@@ -357,8 +361,8 @@ nav a:hover { color: var(--accent); }
   <pre><code>consists_of^{has_ingredient=161}, has_dose_form=317541</code></pre>
   <p><em>SCDs containing acetaminophen in Oral Tablet form.</em></p>
   <div class="try-it">
-    <button class="try-btn" onclick="tryVCL('consists_of^{has_ingredient=161}')">Try: consists_of^{has_ingredient=161}</button>
-    <button class="try-btn" onclick="tryVCL('consists_of^{has_ingredient=161},has_dose_form=317541')">Try: + Oral Tablet</button>
+    <button class="try-btn" onclick="tryExample('in-filter-list')">Try: consists_of^{has_ingredient=161}</button>
+    <button class="try-btn" onclick="tryExample('nesting-deep')">Try: + Oral Tablet</button>
   </div>
 </div>
 
@@ -368,7 +372,7 @@ nav a:hover { color: var(--accent); }
   <pre><code>(has_ingredient=161)-(has_ingredient=5489)</code></pre>
   <p><em>Concepts containing acetaminophen but NOT hydrocodone.</em> Useful for excluding combination drugs.</p>
   <div class="try-it">
-    <button class="try-btn" onclick="tryVCL('(has_ingredient=161)-(has_ingredient=5489)')">Try: acetaminophen minus hydrocodone</button>
+    <button class="try-btn" onclick="tryExample('exclusion')">Try: acetaminophen minus hydrocodone</button>
   </div>
 </div>
 
@@ -389,20 +393,24 @@ nav a:hover { color: var(--accent); }
   <pre><code>^http://example.com/ValueSet/analgesics</code></pre>
   <p><em>All codes that are members of the referenced ValueSet.</em></p>
   <div class="try-it">
-    <button class="try-btn" onclick="tryVCL('has_ingredient^{161,5640,1191}')">Try: has_ingredient^{161,5640,1191}</button>
+    <button class="try-btn" onclick="tryExample('in-code-list')">Try: has_ingredient^{161,5640,1191}</button>
   </div>
 </div>
 
 <div class="step">
   <h3>Step 9: Regex and Exists</h3>
   <p><code>/</code> applies a regex match to a property's value:</p>
-  <pre><code>display/".*ibuprofen.*Tablet.*"</code></pre>
+  <pre><code>RXN_STRENGTH/".*500.*"</code></pre>
+  <p><em>Concepts whose strength contains "500".</em> Combine with other filters to narrow down:</p>
+  <pre><code>display/".*minophen.*", TTY=SCD</code></pre>
+  <p><em>All SCDs whose display name matches "minophen" (acetaminophen, etc.).</em></p>
   <p><code>?</code> tests whether a property has any value at all:</p>
   <pre><code>has_tradename?true</code></pre>
   <p><em>Concepts that have at least one tradename (i.e., generic drugs with branded versions).</em></p>
   <div class="try-it">
-    <button class="try-btn" onclick="tryVCL('has_tradename?true')">Try: has_tradename?true</button>
-    <button class="try-btn" onclick="tryVCL('RXN_STRENGTH/\".*500.*\"')">Try: RXN_STRENGTH regex</button>
+    <button class="try-btn" onclick="tryExample('regex-display')">Try: display regex</button>
+    <button class="try-btn" onclick="tryExample('regex-strength')">Try: strength regex</button>
+    <button class="try-btn" onclick="tryExample('exists-tradename')">Try: has_tradename?true</button>
   </div>
 </div>
 
@@ -415,20 +423,22 @@ nav a:hover { color: var(--accent); }
 <div class="step">
   <h3>Example 1: All generic ibuprofen oral tablets</h3>
   <p><strong>Question:</strong> "Give me all SCD (generic drug) codes for ibuprofen in oral tablet form."</p>
-  <p><strong>Approach:</strong> We need three conditions to intersect: TTY must be SCD, ingredient must be ibuprofen (5640),
-  and dose form must be Oral Tablet (317541).</p>
-  <pre><code>TTY=SCD, has_ingredient=5640, has_dose_form=317541</code></pre>
+  <p><strong>Approach:</strong> We need three conditions to intersect: TTY must be SCD, the drug must consist of
+  a component containing ibuprofen (5640), and dose form must be Oral Tablet (317541). Since SCDs don't
+  directly have <code>has_ingredient</code> edges, we use <code>consists_of^{has_ingredient=5640}</code>
+  to match SCDs whose components include ibuprofen.</p>
+  <pre><code>TTY=SCD, consists_of^{has_ingredient=5640}, has_dose_form=317541</code></pre>
   <p>The commas mean AND &mdash; all three filters must match on the same concept.</p>
-  <div class="try-it"><button class="try-btn" onclick="tryVCL('TTY=SCD,has_ingredient=5640,has_dose_form=317541')">Run this query</button></div>
+  <div class="try-it"><button class="try-btn" onclick="tryExample('walkthrough-ibuprofen-tablets')">Run this query</button></div>
 </div>
 
 <div class="step">
-  <h3>Example 2: All branded versions of acetaminophen 500 MG Oral Tablet</h3>
-  <p><strong>Question:</strong> "I know the generic drug acetaminophen 500 MG Oral Tablet (198440). What are its brand-name versions?"</p>
+  <h3>Example 2: All branded versions of acetaminophen 24 MG/ML Oral Solution</h3>
+  <p><strong>Question:</strong> "I know the generic drug acetaminophen 24 MG/ML Oral Solution (104906). What are its brand-name versions?"</p>
   <p><strong>Approach:</strong> Navigate from the SCD via <code>has_tradename</code>:</p>
-  <pre><code>198440.has_tradename</code></pre>
-  <p>The dot starts at code 198440 and follows the <code>has_tradename</code> property outward, returning all SBDs.</p>
-  <div class="try-it"><button class="try-btn" onclick="tryVCL('198440.has_tradename')">Run this query</button></div>
+  <pre><code>104906.has_tradename</code></pre>
+  <p>The dot starts at code 104906 and follows the <code>has_tradename</code> property outward, returning all SBDs.</p>
+  <div class="try-it"><button class="try-btn" onclick="tryExample('of-tradename')">Run this query</button></div>
 </div>
 
 <div class="step">
@@ -437,7 +447,7 @@ nav a:hover { color: var(--accent); }
   <p><strong>Approach:</strong> Use exclusion. Both sides query <code>has_ingredient</code>:</p>
   <pre><code>(has_ingredient=161) - (has_ingredient=5489)</code></pre>
   <p>The first group finds everything containing acetaminophen; the minus removes anything also containing hydrocodone.</p>
-  <div class="try-it"><button class="try-btn" onclick="tryVCL('(has_ingredient=161)-(has_ingredient=5489)')">Run this query</button></div>
+  <div class="try-it"><button class="try-btn" onclick="tryExample('exclusion')">Run this query</button></div>
 </div>
 
 <div class="step">
@@ -445,7 +455,7 @@ nav a:hover { color: var(--accent); }
   <p><strong>Question:</strong> "Find combination products with both aspirin and caffeine (like Excedrin)."</p>
   <p><strong>Approach:</strong> Use nested filters with AND. We want SCDs that consist_of components with aspirin AND also consist_of components with caffeine:</p>
   <pre><code>consists_of^{has_ingredient=1191}, consists_of^{has_ingredient=1886}</code></pre>
-  <div class="try-it"><button class="try-btn" onclick="tryVCL('consists_of^{has_ingredient=1191},consists_of^{has_ingredient=1886}')">Run this query</button></div>
+  <div class="try-it"><button class="try-btn" onclick="tryExample('multi-ingredient-aspirin-caffeine')">Run this query</button></div>
 </div>
 
 <div class="step">
@@ -456,7 +466,7 @@ nav a:hover { color: var(--accent); }
   <p>Or more simply &mdash; since BN concepts have <code>tradename_of</code> pointing to IN:</p>
   <pre><code>tradename_of=5640, TTY=BN</code></pre>
   <div class="try-it">
-    <button class="try-btn" onclick="tryVCL('tradename_of=5640,TTY=BN')">Run: simple filter approach</button>
+    <button class="try-btn" onclick="tryExample('bn-ibuprofen')">Run: simple filter approach</button>
   </div>
 </div>
 </section>
@@ -475,9 +485,9 @@ nav a:hover { color: var(--accent); }
   <tr><td>descendent-of</td><td><code>&lt;</code></td><td><code>prop&lt;code</code></td><td><code>concept&lt;161</code></td><td>Strict descendant</td></tr>
   <tr><td>child-of</td><td><code>&lt;!</code></td><td><code>prop&lt;!code</code></td><td><code>concept&lt;!161</code></td><td>Direct child only</td></tr>
   <tr><td>is-not-a</td><td><code>~&lt;&lt;</code></td><td><code>prop~&lt;&lt;code</code></td><td><code>concept~&lt;&lt;161</code></td><td>NOT descendant or self</td></tr>
-  <tr><td>generalizes</td><td><code>&gt;&gt;</code></td><td><code>prop&gt;&gt;code</code></td><td><code>concept&gt;&gt;198440</code></td><td>Ancestor or self</td></tr>
+  <tr><td>generalizes</td><td><code>&gt;&gt;</code></td><td><code>prop&gt;&gt;code</code></td><td><code>concept&gt;&gt;104906</code></td><td>Ancestor or self</td></tr>
   <tr><td>descendent-leaf</td><td><code>!!&lt;</code></td><td><code>prop!!&lt;code</code></td><td><code>concept!!&lt;161</code></td><td>Leaf descendants</td></tr>
-  <tr><td>of</td><td><code>.</code></td><td><code>val.prop</code></td><td><code>198440.has_tradename</code></td><td>Navigate property from value</td></tr>
+  <tr><td>of</td><td><code>.</code></td><td><code>val.prop</code></td><td><code>104906.has_tradename</code></td><td>Navigate property from value</td></tr>
 </table>
 <p>Set operators: <code>,</code> (AND/intersection), <code>;</code> (OR/union), <code>-</code> (exclusion/minus).</p>
 <p>Grouping: <code>(</code>...<code>)</code> for sub-expressions, <code>{</code>...<code>}</code> for nested filter lists and code lists.</p>
@@ -602,20 +612,21 @@ can resolve directly with <code>$expand</code>:</p>
   <h2 id="playground">Playground</h2>
 
   <div id="examples-bar">
-    <button class="example-btn" onclick="tryVCL('161')">161</button>
-    <button class="example-btn" onclick="tryVCL('has_ingredient=161')">has_ingredient=161</button>
-    <button class="example-btn" onclick="tryVCL('198440.has_tradename')">198440.has_tradename</button>
-    <button class="example-btn" onclick="tryVCL('TTY=SCD,has_ingredient=5640')">SCD + ibuprofen</button>
-    <button class="example-btn" onclick="tryVCL('consists_of^{has_ingredient=161}')">consists_of^{...}</button>
-    <button class="example-btn" onclick="tryVCL('(has_ingredient=161)-(has_ingredient=5489)')">exclusion</button>
-    <button class="example-btn" onclick="tryVCL('has_ingredient^{161,5640,1191}')">^{code list}</button>
-    <button class="example-btn" onclick="tryVCL('{198440.has_tradename}.has_ingredient')">chained nav</button>
-    <button class="example-btn" onclick="tryVCL('*')">*</button>
+    <button class="example-btn" onclick="tryExample('code-161')">161</button>
+    <button class="example-btn" onclick="tryExample('filter-ingredient')">has_ingredient=161</button>
+    <button class="example-btn" onclick="tryExample('of-tradename')">104906.has_tradename</button>
+    <button class="example-btn" onclick="tryExample('scd-ibuprofen')">SCD + ibuprofen</button>
+    <button class="example-btn" onclick="tryExample('in-filter-list')">consists_of^{...}</button>
+    <button class="example-btn" onclick="tryExample('exclusion')">exclusion</button>
+    <button class="example-btn" onclick="tryExample('in-code-list')">^{code list}</button>
+    <button class="example-btn" onclick="tryExample('of-chained')">chained nav</button>
+    <button class="example-btn" onclick="tryExample('star')">*</button>
   </div>
 
   <div id="playground-input-wrap">
     <span id="playground-system-prefix">(http://www.nlm.nih.gov/research/umls/rxnorm)</span>
     <input id="playground-input" type="text" placeholder="Type a VCL expression..." spellcheck="false" autocomplete="off">
+    <button id="copy-link-btn" onclick="copyLink()" title="Copy shareable link">Copy link</button>
   </div>
   <div id="playground-error"></div>
   <div id="playground-info"></div>
@@ -647,841 +658,6 @@ can resolve directly with <code>$expand</code>:</p>
 </div><!-- /.container -->
 
 <!-- ============================== JAVASCRIPT ============================== -->
-<script>
-// Embedded RxNorm data (injected by build.sh)
-const RXNORM_DATA = "__RXNORM_DATA_PLACEHOLDER__";
-
-// ==================== DATA INDEX ====================
-const DB = (() => {
-  const d = RXNORM_DATA;
-  const byCode = new Map();
-  for (const c of d.concepts) byCode.set(c.code, c);
-
-  const edgesBySource = new Map();
-  const edgesByTarget = new Map();
-  for (const e of d.edges) {
-    if (!edgesBySource.has(e.source)) edgesBySource.set(e.source, []);
-    edgesBySource.get(e.source).push(e);
-    if (!edgesByTarget.has(e.target)) edgesByTarget.set(e.target, []);
-    edgesByTarget.get(e.target).push(e);
-  }
-
-  const literalsByCode = new Map();
-  for (const l of d.literals) {
-    if (!literalsByCode.has(l.code)) literalsByCode.set(l.code, []);
-    literalsByCode.get(l.code).push(l);
-  }
-
-  const allCodes = new Set(d.concepts.map(c => c.code));
-
-  return { byCode, edgesBySource, edgesByTarget, literalsByCode, allCodes, concepts: d.concepts };
-})();
-
-// ==================== TOKENIZER ====================
-const TT = {
-  DASH:'-', OPEN:'(', CLOSE:')', LCRLY:'{', RCRLY:'}', SEMI:';', COMMA:',', DOT:'.', STAR:'*',
-  EQ:'=', IS_A:'<<', IS_NOT_A:'~<<', DESC_OF:'<', REGEX:'/', IN:'^', NOT_IN:'~^',
-  GENERALIZES:'>>', CHILD_OF:'<!', DESC_LEAF:'!!<', EXISTS:'?',
-  URI:'URI', SCODE:'SCODE', QUOTED:'QUOTED', EOF:'EOF'
-};
-
-function tokenize(input) {
-  const tokens = [];
-  let i = 0;
-  while (i < input.length) {
-    // skip whitespace
-    if (input[i] === ' ' || input[i] === '\t') { i++; continue; }
-
-    const rest = input.substring(i);
-    let m;
-
-    // multi-char operators (longest match first)
-    if (rest.startsWith('~<<')) { tokens.push({type: TT.IS_NOT_A, value: '~<<', pos: i}); i += 3; continue; }
-    if (rest.startsWith('!!<')) { tokens.push({type: TT.DESC_LEAF, value: '!!<', pos: i}); i += 3; continue; }
-    if (rest.startsWith('~^'))  { tokens.push({type: TT.NOT_IN, value: '~^', pos: i}); i += 2; continue; }
-    if (rest.startsWith('<<'))  { tokens.push({type: TT.IS_A, value: '<<', pos: i}); i += 2; continue; }
-    if (rest.startsWith('>>'))  { tokens.push({type: TT.GENERALIZES, value: '>>', pos: i}); i += 2; continue; }
-    if (rest.startsWith('<!'))  { tokens.push({type: TT.CHILD_OF, value: '<!', pos: i}); i += 2; continue; }
-
-    // single-char operators
-    const singles = { '-': TT.DASH, '(': TT.OPEN, ')': TT.CLOSE, '{': TT.LCRLY, '}': TT.RCRLY,
-      ';': TT.SEMI, ',': TT.COMMA, '.': TT.DOT, '*': TT.STAR, '=': TT.EQ,
-      '<': TT.DESC_OF, '/': TT.REGEX, '^': TT.IN, '?': TT.EXISTS, '>': TT.GENERALIZES };
-    // Note: single > shouldn't happen in valid VCL but handle gracefully
-    if (singles[input[i]] && input[i] !== '>') {
-      tokens.push({type: singles[input[i]], value: input[i], pos: i});
-      i++; continue;
-    }
-
-    // Quoted value
-    if (input[i] === '"') {
-      let j = i + 1, val = '';
-      while (j < input.length && input[j] !== '"') {
-        if (input[j] === '\\' && j + 1 < input.length) { val += input[j+1]; j += 2; }
-        else { val += input[j]; j++; }
-      }
-      if (j >= input.length) throw new ParseError('Unterminated string', i);
-      tokens.push({type: TT.QUOTED, value: val, pos: i});
-      i = j + 1; continue;
-    }
-
-    // URI: [a-zA-Z]+:[a-zA-Z0-9?=:;&_%+-.@#$^!{}/]+
-    // Only match if we see letters followed by : and then URI chars, AND it looks like a real URI
-    // (has at least a slash or dot after the colon to distinguish from property names)
-    m = rest.match(/^([a-zA-Z]+:[a-zA-Z0-9?=:;&_%+\-.@#$^!{}/]+)/);
-    if (m && /[./]/.test(m[1].substring(m[1].indexOf(':') + 1))) {
-      tokens.push({type: TT.URI, value: m[1], pos: i});
-      i += m[1].length; continue;
-    }
-
-    // SCODE: [a-zA-Z0-9][-_a-zA-Z0-9]*
-    m = rest.match(/^([a-zA-Z0-9][-_a-zA-Z0-9]*)/);
-    if (m) {
-      tokens.push({type: TT.SCODE, value: m[1], pos: i});
-      i += m[1].length; continue;
-    }
-
-    throw new ParseError(`Unexpected character: '${input[i]}'`, i);
-  }
-  tokens.push({type: TT.EOF, value: '', pos: i});
-  return tokens;
-}
-
-// ==================== PARSER ====================
-class ParseError extends Error {
-  constructor(msg, pos) { super(msg); this.pos = pos; }
-}
-
-class Parser {
-  constructor(tokens) { this.tokens = tokens; this.pos = 0; }
-  peek() { return this.tokens[this.pos]; }
-  advance() { return this.tokens[this.pos++]; }
-  expect(type) {
-    const t = this.peek();
-    if (t.type !== type) throw new ParseError(`Expected ${type}, got ${t.type} '${t.value}'`, t.pos);
-    return this.advance();
-  }
-  match(type) {
-    if (this.peek().type === type) return this.advance();
-    return null;
-  }
-
-  parse() {
-    const ast = this.parseExpr();
-    this.expect(TT.EOF);
-    return ast;
-  }
-
-  parseExpr() {
-    const first = this.parseSubExpr();
-    const t = this.peek();
-    if (t.type === TT.COMMA) {
-      const parts = [first];
-      while (this.match(TT.COMMA)) parts.push(this.parseSubExpr());
-      return {type: 'conjunction', parts};
-    }
-    if (t.type === TT.SEMI) {
-      const parts = [first];
-      while (this.match(TT.SEMI)) parts.push(this.parseSubExpr());
-      return {type: 'disjunction', parts};
-    }
-    if (t.type === TT.DASH) {
-      this.advance();
-      const excluded = this.parseSubExpr();
-      return {type: 'exclusion', include: first, exclude: excluded};
-    }
-    return first;
-  }
-
-  parseSubExpr() {
-    let systemUri = null;
-    // Check for systemUri: (URI)
-    if (this.peek().type === TT.OPEN) {
-      const saved = this.pos;
-      this.advance();
-      if (this.peek().type === TT.URI) {
-        const uri = this.advance().value;
-        if (this.peek().type === TT.CLOSE) {
-          this.advance();
-          // Is this a systemUri prefix or a grouped expression?
-          // If next token could start a simpleExpr or is OPEN, it's a systemUri
-          const next = this.peek();
-          if (next.type === TT.OPEN || next.type === TT.STAR || next.type === TT.SCODE ||
-              next.type === TT.QUOTED || next.type === TT.IN || next.type === TT.LCRLY ||
-              this.isOperator(next.type)) {
-            systemUri = uri;
-          } else {
-            // It was a grouped code list like (code1;code2), backtrack
-            this.pos = saved;
-          }
-        } else {
-          this.pos = saved;
-        }
-      } else {
-        this.pos = saved;
-      }
-    }
-
-    // Grouped expression
-    if (this.peek().type === TT.OPEN) {
-      this.advance();
-      const inner = this.parseExpr();
-      this.expect(TT.CLOSE);
-      // Check for dot (of operator on grouped result)
-      if (this.peek().type === TT.DOT) {
-        this.advance();
-        const prop = this.parseCode();
-        return {type: 'of', value: inner, property: prop, systemUri};
-      }
-      if (systemUri) inner.systemUri = systemUri;
-      return inner;
-    }
-
-    return this.parseSimpleExpr(systemUri);
-  }
-
-  isOperator(type) {
-    return [TT.EQ, TT.IS_A, TT.IS_NOT_A, TT.DESC_OF, TT.REGEX, TT.IN, TT.NOT_IN,
-            TT.GENERALIZES, TT.CHILD_OF, TT.DESC_LEAF, TT.EXISTS].includes(type);
-  }
-
-  parseSimpleExpr(systemUri) {
-    const t = this.peek();
-
-    // Star
-    if (t.type === TT.STAR) {
-      this.advance();
-      // Check for .property (of operator)
-      if (this.peek().type === TT.DOT) {
-        this.advance();
-        const prop = this.parseCode();
-        return {type: 'of', value: {type: 'star'}, property: prop, systemUri};
-      }
-      return {type: 'star', systemUri};
-    }
-
-    // includeVs: ^URI or ^(URI)
-    if (t.type === TT.IN) {
-      this.advance();
-      if (this.peek().type === TT.URI) {
-        return {type: 'includeVs', uri: this.advance().value, systemUri};
-      }
-      if (this.peek().type === TT.OPEN) {
-        this.advance();
-        const uri = this.expect(TT.URI).value;
-        this.expect(TT.CLOSE);
-        return {type: 'includeVs', uri, systemUri};
-      }
-      throw new ParseError('Expected URI after ^', t.pos);
-    }
-
-    // codeList starting with {
-    if (t.type === TT.LCRLY) {
-      const saved = this.pos;
-      this.advance();
-      // Could be a filterList or codeList. Try to distinguish.
-      // If first item is followed by an operator, it's a filterList.
-      // If first item is followed by comma and next is a code (not operator), it's a codeList.
-      const firstCode = this.parseCode();
-      const next = this.peek();
-
-      if (this.isOperator(next.type) || next.type === TT.DOT) {
-        // It's a filterList (code followed by operator or dot means filter, not codeList)
-        this.pos = saved;
-        const fl = this.parseFilterList();
-        // filterList followed by .property = "of" operator
-        if (this.peek().type === TT.DOT) {
-          this.advance();
-          const prop = this.parseCode();
-          return {type: 'of', value: fl, property: prop, systemUri};
-        }
-        // Standalone filterList — evaluate the filters directly
-        if (fl.filters && fl.filters.length === 1) return fl.filters[0];
-        return fl;
-      }
-
-      // It's a codeList (or a single code in braces... which VCL grammar says needs 2+ codes)
-      const codes = [firstCode];
-      while (this.match(TT.COMMA)) codes.push(this.parseCode());
-      this.expect(TT.RCRLY);
-
-      // Check for .property
-      if (this.peek().type === TT.DOT) {
-        this.advance();
-        const prop = this.parseCode();
-        return {type: 'of', value: {type: 'codeList', codes}, property: prop, systemUri};
-      }
-
-      // If just one code, treat as a code (grammar says 2+ for codeList but be lenient)
-      if (codes.length === 1) return {type: 'code', value: codes[0], systemUri};
-      return {type: 'codeList', codes, systemUri};
-    }
-
-    // code or filter (both start with SCODE/QUOTED)
-    if (t.type === TT.SCODE || t.type === TT.QUOTED) {
-      const code = this.parseCode();
-      const next = this.peek();
-
-      // Check for filter operators
-      if (this.isOperator(next.type)) {
-        return this.parseFilterRest(code, systemUri);
-      }
-
-      // Check for .property (of operator / property navigation)
-      if (next.type === TT.DOT) {
-        this.advance();
-        const prop = this.parseCode();
-        return {type: 'of', value: {type: 'code', value: code}, property: prop, systemUri};
-      }
-
-      // Just a code
-      return {type: 'code', value: code, systemUri};
-    }
-
-    throw new ParseError(`Unexpected token: ${t.type} '${t.value}'`, t.pos);
-  }
-
-  parseFilterRest(property, systemUri) {
-    const op = this.advance();
-    const opType = op.type;
-
-    if (opType === TT.EQ) return {type: 'filter', property, op: '=', value: this.parseCode(), systemUri};
-    if (opType === TT.IS_A) return {type: 'filter', property, op: 'is-a', value: this.parseCode(), systemUri};
-    if (opType === TT.IS_NOT_A) return {type: 'filter', property, op: 'is-not-a', value: this.parseCode(), systemUri};
-    if (opType === TT.DESC_OF) return {type: 'filter', property, op: 'descendent-of', value: this.parseCode(), systemUri};
-    if (opType === TT.GENERALIZES) return {type: 'filter', property, op: 'generalizes', value: this.parseCode(), systemUri};
-    if (opType === TT.CHILD_OF) return {type: 'filter', property, op: 'child-of', value: this.parseCode(), systemUri};
-    if (opType === TT.DESC_LEAF) return {type: 'filter', property, op: 'descendent-leaf', value: this.parseCode(), systemUri};
-    if (opType === TT.EXISTS) return {type: 'filter', property, op: 'exists', value: this.parseCode(), systemUri};
-
-    if (opType === TT.REGEX) {
-      const str = this.expect(TT.QUOTED).value;
-      return {type: 'filter', property, op: 'regex', value: str, systemUri};
-    }
-
-    if (opType === TT.IN || opType === TT.NOT_IN) {
-      const inOp = opType === TT.IN ? 'in' : 'not-in';
-      const next = this.peek();
-      if (next.type === TT.URI) {
-        return {type: 'filter', property, op: inOp, value: {type: 'vsRef', uri: this.advance().value}, systemUri};
-      }
-      if (next.type === TT.LCRLY) {
-        // Could be codeList or filterList
-        const saved = this.pos;
-        this.advance(); // consume {
-        const firstCode = this.parseCode();
-        const after = this.peek();
-        this.pos = saved; // backtrack
-
-        if (this.isOperator(after.type)) {
-          // filterList
-          const fl = this.parseFilterList();
-          return {type: 'filter', property, op: inOp, value: fl, systemUri};
-        } else {
-          // codeList
-          const cl = this.parseCodeList();
-          return {type: 'filter', property, op: inOp, value: cl, systemUri};
-        }
-      }
-      throw new ParseError(`Expected {codeList}, {filterList}, or URI after ${op.value}`, op.pos);
-    }
-
-    throw new ParseError(`Unknown operator: ${op.value}`, op.pos);
-  }
-
-  parseCodeList() {
-    this.expect(TT.LCRLY);
-    const codes = [this.parseCode()];
-    while (this.match(TT.COMMA)) codes.push(this.parseCode());
-    this.expect(TT.RCRLY);
-    return {type: 'codeList', codes};
-  }
-
-  parseFilterList() {
-    this.expect(TT.LCRLY);
-    const filters = [this.parseFilter()];
-    while (this.match(TT.COMMA)) filters.push(this.parseFilter());
-    this.expect(TT.RCRLY);
-    return {type: 'filterList', filters};
-  }
-
-  parseFilter() {
-    const t = this.peek();
-    if (t.type === TT.SCODE || t.type === TT.QUOTED) {
-      const code = this.parseCode();
-      if (this.isOperator(this.peek().type)) {
-        return this.parseFilterRest(code, null);
-      }
-      // Could be code.property (of)
-      if (this.peek().type === TT.DOT) {
-        this.advance();
-        const prop = this.parseCode();
-        return {type: 'of', value: {type: 'code', value: code}, property: prop};
-      }
-      throw new ParseError(`Expected operator after '${code}'`, this.peek().pos);
-    }
-    throw new ParseError(`Expected filter, got ${t.type}`, t.pos);
-  }
-
-  parseCode() {
-    const t = this.peek();
-    if (t.type === TT.SCODE) return this.advance().value;
-    if (t.type === TT.QUOTED) return this.advance().value;
-    throw new ParseError(`Expected code, got ${t.type} '${t.value}'`, t.pos);
-  }
-}
-
-function parseVCL(input) {
-  const tokens = tokenize(input);
-  const parser = new Parser(tokens);
-  return parser.parse();
-}
-
-// ==================== EVALUATOR ====================
-function evaluate(ast) {
-  switch (ast.type) {
-    case 'star':
-      return new Set(DB.allCodes);
-
-    case 'code': {
-      const c = DB.byCode.get(ast.value);
-      return c ? new Set([ast.value]) : new Set();
-    }
-
-    case 'codeList':
-      return new Set(ast.codes.filter(c => DB.byCode.has(c)));
-
-    case 'filter':
-      return evalFilter(ast);
-
-    case 'of':
-      return evalOf(ast);
-
-    case 'conjunction': {
-      let result = null;
-      for (const part of ast.parts) {
-        const partResult = evaluate(part);
-        if (result === null) result = partResult;
-        else result = intersect(result, partResult);
-      }
-      return result || new Set();
-    }
-
-    case 'disjunction': {
-      const result = new Set();
-      for (const part of ast.parts) {
-        for (const code of evaluate(part)) result.add(code);
-      }
-      return result;
-    }
-
-    case 'exclusion': {
-      const include = evaluate(ast.include);
-      const exclude = evaluate(ast.exclude);
-      const result = new Set(include);
-      for (const code of exclude) result.delete(code);
-      return result;
-    }
-
-    case 'includeVs':
-      // Can't resolve external ValueSet URIs in this demo
-      return new Set();
-
-    case 'filterList': {
-      // A filterList evaluates as the intersection of its filters
-      let result = null;
-      for (const f of ast.filters) {
-        const fResult = evaluate(f);
-        if (result === null) result = fResult;
-        else result = intersect(result, fResult);
-      }
-      return result || new Set();
-    }
-
-    default:
-      return new Set();
-  }
-}
-
-function evalFilter(ast) {
-  const {property, op, value} = ast;
-  const results = new Set();
-
-  if (op === '=') {
-    const targetValue = typeof value === 'object' ? value.value : value;
-    // Check concept edges
-    for (const code of DB.allCodes) {
-      // Check edges where source=code, property matches, target=value
-      const edges = DB.edgesBySource.get(code) || [];
-      for (const e of edges) {
-        if (e.property === property && e.target === targetValue) { results.add(code); break; }
-      }
-      if (results.has(code)) continue;
-      // Check literals
-      const lits = DB.literalsByCode.get(code) || [];
-      for (const l of lits) {
-        if (l.property === property && l.value === targetValue) { results.add(code); break; }
-      }
-    }
-    return results;
-  }
-
-  if (op === 'exists') {
-    const val = typeof value === 'object' ? value.value || value : value;
-    const wantExists = val === 'true' || val === true;
-    for (const code of DB.allCodes) {
-      const edges = DB.edgesBySource.get(code) || [];
-      let found = edges.some(e => e.property === property);
-      if (!found) {
-        const lits = DB.literalsByCode.get(code) || [];
-        found = lits.some(l => l.property === property);
-      }
-      if (found === wantExists) results.add(code);
-    }
-    return results;
-  }
-
-  if (op === 'regex') {
-    let re;
-    try { re = new RegExp(value); } catch(e) { return results; }
-    for (const code of DB.allCodes) {
-      // Check if property value matches regex
-      if (property === 'code' || property === 'display') {
-        const c = DB.byCode.get(code);
-        const testVal = property === 'code' ? c.code : c.display;
-        if (testVal && re.test(testVal)) results.add(code);
-        continue;
-      }
-      const lits = DB.literalsByCode.get(code) || [];
-      for (const l of lits) {
-        if (l.property === property && re.test(l.value)) { results.add(code); break; }
-      }
-      const edges = DB.edgesBySource.get(code) || [];
-      for (const e of edges) {
-        if (e.property === property && re.test(e.target)) { results.add(code); break; }
-      }
-    }
-    return results;
-  }
-
-  if (op === 'in' || op === 'not-in') {
-    let matchSet;
-    if (value.type === 'codeList') {
-      matchSet = new Set(value.codes);
-    } else if (value.type === 'filterList') {
-      // Evaluate the nested filters and collect matching codes
-      matchSet = new Set();
-      // Each filter in the list is ANDed — evaluate each, intersect
-      let nested = null;
-      for (const f of value.filters) {
-        const fResult = evaluate(f);
-        if (nested === null) nested = fResult;
-        else nested = intersect(nested, fResult);
-      }
-      matchSet = nested || new Set();
-    } else {
-      return results; // URI reference, can't resolve
-    }
-
-    for (const code of DB.allCodes) {
-      const edges = DB.edgesBySource.get(code) || [];
-      let found = false;
-      for (const e of edges) {
-        if (e.property === property && matchSet.has(e.target)) { found = true; break; }
-      }
-      if (!found) {
-        const lits = DB.literalsByCode.get(code) || [];
-        for (const l of lits) {
-          if (l.property === property && matchSet.has(l.value)) { found = true; break; }
-        }
-      }
-      if (op === 'in' ? found : !found) results.add(code);
-    }
-    return results;
-  }
-
-  // For hierarchy operators (is-a, descendent-of, etc.) — limited support in this demo
-  // since we don't have full isa hierarchy in the subset
-  return results;
-}
-
-function evalOf(ast) {
-  // "of" operator: start with value set, follow property to get targets
-  const valueCodes = evaluate(ast.value);
-  const results = new Set();
-  const prop = ast.property;
-
-  for (const code of valueCodes) {
-    const edges = DB.edgesBySource.get(code) || [];
-    for (const e of edges) {
-      if (e.property === prop) results.add(e.target);
-    }
-  }
-  return results;
-}
-
-function intersect(a, b) {
-  const result = new Set();
-  for (const x of a) { if (b.has(x)) result.add(x); }
-  return result;
-}
-
-// ==================== AST TO COMPOSE JSON ====================
-// Build a nested compose value for R6 filter values (filterList, of, etc.)
-function nestedComposeValue(node, system) {
-  if (node.type === 'filter') {
-    const f = { property: node.property, op: node.op };
-    if (typeof node.value === 'string') f.value = node.value;
-    else if (node.value && node.value.type === 'codeList') f.value = node.value.codes.join(',');
-    else if (node.value && node.value.type === 'filterList') f.value = nestedComposeValue(node.value, system);
-    else f.value = String(node.value);
-    return { filter: [f] };
-  }
-  if (node.type === 'filterList') {
-    const filters = node.filters.map(f => {
-      const r = { property: f.property, op: f.op };
-      if (typeof f.value === 'string') r.value = f.value;
-      else if (f.value && f.value.type === 'codeList') r.value = f.value.codes.join(',');
-      else if (f.value && f.value.type === 'filterList') r.value = nestedComposeValue(f.value, system);
-      else r.value = String(f.value);
-      return r;
-    });
-    return { filter: filters };
-  }
-  if (node.type === 'of') {
-    const f = { property: node.property, op: 'of' };
-    if (node.value.type === 'code') f.value = node.value.value;
-    else if (node.value.type === 'codeList') f.value = node.value.codes.join(',');
-    else f.value = nestedComposeValue(node.value, system);
-    return { filter: [f] };
-  }
-  if (node.type === 'conjunction') {
-    const filters = [];
-    for (const p of node.parts) {
-      const nested = nestedComposeValue(p, system);
-      if (nested.filter) filters.push(...nested.filter);
-    }
-    return { filter: filters };
-  }
-  if (node.type === 'code') return { concept: [{ code: node.value }] };
-  if (node.type === 'codeList') return { concept: node.codes.map(c => ({ code: c })) };
-  return { _note: `Unsupported nested: ${node.type}` };
-}
-
-function astToCompose(ast, system) {
-  system = system || RXNORM_DATA.system;
-  const compose = { include: [], exclude: [] };
-
-  function addFilters(node, target) {
-    if (node.type === 'filter') {
-      const f = { property: node.property, op: node.op };
-      if (typeof node.value === 'string') f.value = node.value;
-      else if (node.value && node.value.type === 'codeList') f.value = node.value.codes.join(',');
-      else if (typeof node.value === 'object' && node.value.value) f.value = node.value.value;
-      else f.value = String(node.value);
-      target.push({ system, filter: [f] });
-    } else if (node.type === 'conjunction') {
-      const filters = [];
-      for (const p of node.parts) {
-        if (p.type === 'filter') {
-          const f = { property: p.property, op: p.op };
-          if (typeof p.value === 'string') f.value = p.value;
-          else if (p.value && p.value.type === 'codeList') f.value = p.value.codes.join(',');
-          else if (p.value && p.value.type === 'filterList') f.value = nestedComposeValue(p.value, system);
-          else f.value = String(p.value);
-          filters.push(f);
-        } else if (p.type === 'of') {
-          const f = { property: p.property, op: 'of' };
-          if (p.value.type === 'code') f.value = p.value.value;
-          else if (p.value.type === 'codeList') f.value = p.value.codes.join(',');
-          else f.value = nestedComposeValue(p.value, system);
-          filters.push(f);
-        } else {
-          filters.push({ property: 'vcl', op: '=', value: '(complex)' });
-        }
-      }
-      target.push({ system, filter: filters });
-    } else if (node.type === 'disjunction') {
-      for (const p of node.parts) addFilters(p, target);
-    } else if (node.type === 'code') {
-      target.push({ system, concept: [{ code: node.value }] });
-    } else if (node.type === 'codeList') {
-      target.push({ system, concept: node.codes.map(c => ({ code: c })) });
-    } else if (node.type === 'star') {
-      target.push({ system });
-    } else if (node.type === 'of') {
-      const f = { property: node.property, op: 'of' };
-      // Build the "value" side of the of-filter
-      if (node.value.type === 'code') {
-        f.value = node.value.value;
-      } else if (node.value.type === 'codeList') {
-        f.value = node.value.codes.join(',');
-      } else if (node.value.type === 'star') {
-        f.value = '*';
-      } else {
-        // Complex value (filter, filterList, nested of) → R6 nested filter value
-        f.value = nestedComposeValue(node.value, system);
-      }
-      target.push({ system, filter: [f] });
-    } else {
-      target.push({ system, _note: `Unsupported: ${node.type}` });
-    }
-  }
-
-  if (ast.type === 'exclusion') {
-    addFilters(ast.include, compose.include);
-    addFilters(ast.exclude, compose.exclude);
-  } else {
-    addFilters(ast, compose.include);
-  }
-
-  if (compose.exclude.length === 0) delete compose.exclude;
-  return compose;
-}
-
-// ==================== AST PRETTY PRINTER ====================
-function prettyAST(ast, indent) {
-  indent = indent || 0;
-  const pad = '  '.repeat(indent);
-  if (!ast || typeof ast !== 'object') return pad + String(ast);
-
-  switch (ast.type) {
-    case 'code': return `${pad}Code: ${ast.value}`;
-    case 'star': return `${pad}Star: *`;
-    case 'codeList': return `${pad}CodeList: {${ast.codes.join(', ')}}`;
-    case 'filter': {
-      let val = typeof ast.value === 'string' ? ast.value :
-                ast.value && ast.value.type ? `[${ast.value.type}]` : String(ast.value);
-      let s = `${pad}Filter: ${ast.property} ${ast.op} ${val}`;
-      if (ast.value && ast.value.type === 'filterList') {
-        s += '\n' + ast.value.filters.map(f => prettyAST(f, indent + 1)).join('\n');
-      }
-      if (ast.value && ast.value.type === 'codeList') {
-        s = `${pad}Filter: ${ast.property} ${ast.op} {${ast.value.codes.join(', ')}}`;
-      }
-      return s;
-    }
-    case 'of': return `${pad}Of: .${ast.property}\n${prettyAST(ast.value, indent + 1)}`;
-    case 'conjunction': return `${pad}AND:\n${ast.parts.map(p => prettyAST(p, indent + 1)).join('\n')}`;
-    case 'disjunction': return `${pad}OR:\n${ast.parts.map(p => prettyAST(p, indent + 1)).join('\n')}`;
-    case 'exclusion': return `${pad}EXCEPT:\n${pad}  include:\n${prettyAST(ast.include, indent + 2)}\n${pad}  exclude:\n${prettyAST(ast.exclude, indent + 2)}`;
-    case 'includeVs': return `${pad}IncludeVS: ${ast.uri}`;
-    default: return `${pad}${JSON.stringify(ast, null, 2)}`;
-  }
-}
-
-// ==================== UI ====================
-const input = document.getElementById('playground-input');
-const errorEl = document.getElementById('playground-error');
-const infoEl = document.getElementById('playground-info');
-const resultsBody = document.getElementById('results-body');
-const resultsCount = document.getElementById('results-count');
-const composeEl = document.getElementById('compose-json');
-const treeEl = document.getElementById('parse-tree');
-
-let debounceTimer = null;
-input.addEventListener('input', () => {
-  clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(runQuery, 150);
-});
-
-function tryVCL(expr) {
-  input.value = expr;
-  input.focus();
-  runQuery();
-  // On narrow screens, scroll to the playground; on wide screens it's always visible
-  if (window.innerWidth < 1100) {
-    document.getElementById('playground').scrollIntoView({behavior: 'smooth'});
-  }
-}
-
-function runQuery() {
-  const expr = input.value.trim();
-  errorEl.textContent = '';
-  infoEl.textContent = '';
-  resultsBody.innerHTML = '';
-  resultsCount.textContent = '';
-  composeEl.textContent = '';
-  treeEl.textContent = '';
-
-  if (!expr) return;
-
-  let ast, results;
-  try {
-    ast = parseVCL(expr);
-  } catch (e) {
-    errorEl.textContent = e.message + (e.pos !== undefined ? ` (at position ${e.pos})` : '');
-    return;
-  }
-
-  try {
-    results = evaluate(ast);
-  } catch (e) {
-    errorEl.textContent = 'Evaluation error: ' + e.message;
-    return;
-  }
-
-  // Results table
-  const sorted = [...results]
-    .map(code => DB.byCode.get(code))
-    .filter(Boolean)
-    .sort((a, b) => {
-      const ttyOrder = ['IN','PIN','DF','MIN','SCDC','SCDF','SCD','BN','SBDC','SBD'];
-      const ai = ttyOrder.indexOf(a.tty), bi = ttyOrder.indexOf(b.tty);
-      if (ai !== bi) return ai - bi;
-      return a.display.localeCompare(b.display);
-    });
-
-  resultsCount.textContent = `${sorted.length} result${sorted.length !== 1 ? 's' : ''}`;
-  const maxShow = 200;
-  const showing = sorted.slice(0, maxShow);
-  resultsBody.innerHTML = showing.map(c => `
-    <tr>
-      <td class="code-cell" onclick="tryVCL('${c.code}')">${c.code}</td>
-      <td>${esc(c.display)}</td>
-      <td><span class="tty tty-${c.tty}">${c.tty}</span></td>
-    </tr>
-  `).join('');
-  if (sorted.length > maxShow) {
-    resultsBody.innerHTML += `<tr><td colspan="3" style="color:#94a3b8">...and ${sorted.length - maxShow} more</td></tr>`;
-  }
-
-  // Compose JSON
-  try {
-    const compose = astToCompose(ast);
-    composeEl.textContent = JSON.stringify(compose, null, 2);
-  } catch(e) {
-    composeEl.textContent = 'Error generating compose: ' + e.message;
-  }
-
-  // Parse tree
-  treeEl.textContent = prettyAST(ast);
-
-  infoEl.textContent = `Parsed OK. Evaluated against ${DB.allCodes.size} concepts.`;
-}
-
-function showTab(name) {
-  document.querySelectorAll('.pg-tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.pg-panel').forEach(p => p.classList.remove('active'));
-  document.querySelector(`.pg-tab[onclick*="${name}"]`).classList.add('active');
-  document.getElementById('panel-' + name).classList.add('active');
-}
-
-function esc(s) {
-  return s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
-}
-
-// Pick up expression from spec page "Try it" links (via localStorage)
-if (location.hash === '#playground') {
-  const expr = localStorage.getItem('vcl-try');
-  if (expr) {
-    localStorage.removeItem('vcl-try');
-    input.value = expr;
-    setTimeout(() => { runQuery(); input.focus(); }, 100);
-  } else {
-    setTimeout(() => input.focus(), 100);
-  }
-}
-</script>
+<script type="module" src="./app.ts"></script>
 </body>
 </html>

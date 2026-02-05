@@ -311,21 +311,21 @@ dd { margin-left: 1.5em; margin-bottom: 0.5em; }
   <code>property</code>/<code>value</code> roles: the left side is the value (starting point)
   and the right side is the property to follow.
 </p>
-<pre><code>198440.has_tradename</code></pre>
+<pre><code>104906.has_tradename</code></pre>
 <p>
-  Start at concept <code>198440</code> (acetaminophen 500 MG Oral Tablet), follow the
+  Start at concept <code>104906</code> (acetaminophen 24 MG/ML Oral Solution), follow the
   <code>has_tradename</code> relationship outward. Returns all branded versions of that drug.
-  <a class="try-link" href="vcl-tutorial.html#playground" onclick="localStorage.setItem('vcl-try','198440.has_tradename')">Try it</a>
+  <a class="try-link" href="vcl-tutorial.html#playground" onclick="localStorage.setItem('vcl-try','104906.has_tradename')">Try it</a>
 </p>
 <p>
   The value side of <code>.</code> can be any expression that produces a set of codes.
   Curly braces group a sub-expression for multi-hop traversal:
 </p>
-<pre><code>{198440.has_tradename}.has_ingredient</code></pre>
+<pre><code>{104906.has_tradename}.has_ingredient</code></pre>
 <p>
   Start at an SCD &rarr; follow <code>has_tradename</code> (yields SBDs) &rarr;
   follow <code>has_ingredient</code> (yields brand names). This chains two navigation steps.
-  <a class="try-link" href="vcl-tutorial.html#playground" onclick="localStorage.setItem('vcl-try','{198440.has_tradename}.has_ingredient')">Try it</a>
+  <a class="try-link" href="vcl-tutorial.html#playground" onclick="localStorage.setItem('vcl-try','{104906.has_tradename}.has_ingredient')">Try it</a>
 </p>
 <p>
   The left side of <code>.</code> may also be a code list, wildcard, URI, or filter list:
@@ -694,20 +694,20 @@ has_ingredient=5640</code></pre></div>
 
 <h3>The "of" operator (single hop)</h3>
 <div class="side-by-side">
-  <div><h4>VCL</h4><pre><code>198440 . has_tradename</code></pre></div>
+  <div><h4>VCL</h4><pre><code>104906 . has_tradename</code></pre></div>
   <div><h4>compose</h4><pre><code>{"include": [{
   "system": "...",
   "filter": [{
     "property": "has_tradename",
     "op": "of",
-    "value": "198440"
+    "value": "104906"
   }]
 }]}</code></pre></div>
 </div>
 
 <h3>The "of" operator (chained multi-hop)</h3>
 <div class="side-by-side">
-  <div><h4>VCL</h4><pre><code>{198440 . has_tradename} . has_ingredient</code></pre></div>
+  <div><h4>VCL</h4><pre><code>{104906 . has_tradename} . has_ingredient</code></pre></div>
   <div><h4>compose</h4><pre><code>{"include": [{
   "system": "...",
   "filter": [{
@@ -717,7 +717,7 @@ has_ingredient=5640</code></pre></div>
       "filter": [{
         "property": "has_tradename",
         "op": "of",
-        "value": "198440"
+        "value": "104906"
       }]
     }
   }]

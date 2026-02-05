@@ -1,0 +1,110 @@
+{
+  "code-161": {
+    "label": "161",
+    "expr": "161"
+  },
+  "code-317541": {
+    "label": "317541",
+    "expr": "317541"
+  },
+  "filter-ingredient": {
+    "label": "has_ingredient=161",
+    "expr": "has_ingredient=161"
+  },
+  "filter-tty": {
+    "label": "TTY=SCD",
+    "expr": "TTY=SCD"
+  },
+  "filter-dose-form": {
+    "label": "has_dose_form=317541",
+    "expr": "has_dose_form=317541"
+  },
+  "of-tradename": {
+    "label": "104906.has_tradename",
+    "expr": "104906.has_tradename"
+  },
+  "of-chained": {
+    "label": "{104906.has_tradename}.has_ingredient",
+    "expr": "{104906.has_tradename}.has_ingredient"
+  },
+  "and-ingredient-df": {
+    "label": "has_ingredient=161,has_dose_form=317541",
+    "expr": "has_ingredient=161,has_dose_form=317541"
+  },
+  "or-ingredients": {
+    "label": "has_ingredient=161;has_ingredient=5640",
+    "expr": "has_ingredient=161;has_ingredient=5640"
+  },
+  "exclusion": {
+    "label": "(has_ingredient=161)-(has_ingredient=5489)",
+    "expr": "(has_ingredient=161)-(has_ingredient=5489)"
+  },
+  "in-code-list": {
+    "label": "has_ingredient^{161,5640,1191}",
+    "expr": "has_ingredient^{161,5640,1191}"
+  },
+  "in-filter-list": {
+    "label": "consists_of^{has_ingredient=161}",
+    "expr": "consists_of^{has_ingredient=161}"
+  },
+  "regex-strength": {
+    "label": "RXN_STRENGTH/\".*500.*\"",
+    "expr": "RXN_STRENGTH/\".*500.*\""
+  },
+  "exists-tradename": {
+    "label": "has_tradename?true",
+    "expr": "has_tradename?true"
+  },
+  "star": {
+    "label": "*",
+    "expr": "*"
+  },
+  "walkthrough-ibuprofen-tablets": {
+    "label": "TTY=SCD,consists_of^{has_ingredient=5640},has_dose_form=317541",
+    "expr": "TTY=SCD,consists_of^{has_ingredient=5640},has_dose_form=317541"
+  },
+  "walkthrough-tradename": {
+    "label": "104906.has_tradename",
+    "expr": "104906.has_tradename"
+  },
+  "walkthrough-exclusion": {
+    "label": "(has_ingredient=161)-(has_ingredient=5489)",
+    "expr": "(has_ingredient=161)-(has_ingredient=5489)"
+  },
+  "multi-ingredient": {
+    "label": "has_ingredient=1191,has_ingredient=1886",
+    "expr": "has_ingredient=1191,has_ingredient=1886"
+  },
+  "scd-ibuprofen": {
+    "label": "SCD + ibuprofen",
+    "expr": "TTY=SCD,consists_of^{has_ingredient=5640}"
+  },
+  "not-in": {
+    "label": "has_ingredient~^{5489}",
+    "expr": "has_ingredient~^{5489}"
+  },
+  "of-filter-list": {
+    "label": "{TTY=SCD,has_dose_form=317541}.has_tradename",
+    "expr": "{TTY=SCD,has_dose_form=317541}.has_tradename"
+  },
+  "regex-display": {
+    "label": "display/\".*minophen.*\",TTY=SCD",
+    "expr": "display/\".*minophen.*\",TTY=SCD"
+  },
+  "code-list": {
+    "label": "{161,5640}",
+    "expr": "{161,5640}"
+  },
+  "nesting-deep": {
+    "label": "consists_of^{has_ingredient=161},has_dose_form=317541",
+    "expr": "consists_of^{has_ingredient=161},has_dose_form=317541"
+  },
+  "multi-ingredient-aspirin-caffeine": {
+    "label": "consists_of^{has_ingredient=1191},consists_of^{has_ingredient=1886}",
+    "expr": "consists_of^{has_ingredient=1191},consists_of^{has_ingredient=1886}"
+  },
+  "bn-ibuprofen": {
+    "label": "tradename_of=5640,TTY=BN",
+    "expr": "tradename_of=5640,TTY=BN"
+  }
+}
