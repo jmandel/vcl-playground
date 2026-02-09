@@ -24,8 +24,8 @@
     "expr": "104906.has_tradename"
   },
   "of-chained": {
-    "label": "{104906.has_tradename}.has_ingredient",
-    "expr": "{104906.has_tradename}.has_ingredient"
+    "label": "104906.has_tradename.has_ingredient",
+    "expr": "104906.has_tradename.has_ingredient"
   },
   "and-ingredient-df": {
     "label": "has_ingredient=161,has_dose_form=317541",
@@ -40,12 +40,16 @@
     "expr": "(has_ingredient=161)-(has_ingredient=5489)"
   },
   "in-code-list": {
-    "label": "has_ingredient^{161,5640,1191}",
-    "expr": "has_ingredient^{161,5640,1191}"
+    "label": "has_ingredient^(161;5640;1191)",
+    "expr": "has_ingredient^(161;5640;1191)"
   },
   "in-filter-list": {
-    "label": "consists_of^{has_ingredient=161}",
-    "expr": "consists_of^{has_ingredient=161}"
+    "label": "consists_of^(has_ingredient=161)",
+    "expr": "consists_of^(has_ingredient=161)"
+  },
+  "in-filter-list-dotted": {
+    "label": "consists_of.has_ingredient=161",
+    "expr": "consists_of.has_ingredient=161"
   },
   "regex-strength": {
     "label": "RXN_STRENGTH/\".*500.*\"",
@@ -60,8 +64,8 @@
     "expr": "*"
   },
   "walkthrough-ibuprofen-tablets": {
-    "label": "TTY=SCD,consists_of^{has_ingredient=5640},has_dose_form=317541",
-    "expr": "TTY=SCD,consists_of^{has_ingredient=5640},has_dose_form=317541"
+    "label": "TTY=SCD,consists_of^(has_ingredient=5640),has_dose_form=317541",
+    "expr": "TTY=SCD,consists_of^(has_ingredient=5640),has_dose_form=317541"
   },
   "walkthrough-tradename": {
     "label": "104906.has_tradename",
@@ -77,58 +81,70 @@
   },
   "scd-ibuprofen": {
     "label": "SCD + ibuprofen",
-    "expr": "TTY=SCD,consists_of^{has_ingredient=5640}"
+    "expr": "TTY=SCD,consists_of^(has_ingredient=5640)"
   },
   "not-in": {
-    "label": "has_ingredient~^{5489,161}",
-    "expr": "has_ingredient~^{5489,161}"
+    "label": "has_ingredient~^(5489;161)",
+    "expr": "has_ingredient~^(5489;161)"
   },
   "of-filter-list": {
-    "label": "{TTY=SCD,has_dose_form=317541}.has_tradename",
-    "expr": "{TTY=SCD,has_dose_form=317541}.has_tradename"
+    "label": "(TTY=SCD,has_dose_form=317541).has_tradename",
+    "expr": "(TTY=SCD,has_dose_form=317541).has_tradename"
   },
   "regex-display": {
     "label": "display/\".*minophen.*\",TTY=SCD",
     "expr": "display/\".*minophen.*\",TTY=SCD"
   },
   "code-list": {
-    "label": "{161,5640}",
-    "expr": "{161,5640}"
+    "label": "(161;5640)",
+    "expr": "(161;5640)"
   },
   "nesting-deep": {
-    "label": "consists_of^{has_ingredient=161},has_dose_form=317541",
-    "expr": "consists_of^{has_ingredient=161},has_dose_form=317541"
+    "label": "consists_of^(has_ingredient=161),has_dose_form=317541",
+    "expr": "consists_of^(has_ingredient=161),has_dose_form=317541"
   },
   "multi-ingredient-aspirin-caffeine": {
-    "label": "consists_of^{has_ingredient=1191},consists_of^{has_ingredient=1886}",
-    "expr": "consists_of^{has_ingredient=1191},consists_of^{has_ingredient=1886}"
+    "label": "consists_of^(has_ingredient=1191),consists_of^(has_ingredient=1886)",
+    "expr": "consists_of^(has_ingredient=1191),consists_of^(has_ingredient=1886)"
+  },
+  "multi-ingredient-aspirin-caffeine-dotted": {
+    "label": "consists_of.has_ingredient=1191,consists_of.has_ingredient=1886",
+    "expr": "consists_of.has_ingredient=1191,consists_of.has_ingredient=1886"
+  },
+  "walkthrough-ibuprofen-tablets-dotted": {
+    "label": "TTY=SCD,consists_of.has_ingredient=5640,has_dose_form=317541",
+    "expr": "TTY=SCD,consists_of.has_ingredient=5640,has_dose_form=317541"
   },
   "bn-ibuprofen": {
     "label": "tradename_of=5640,TTY=BN",
     "expr": "tradename_of=5640,TTY=BN"
   },
+  "star-concept-hierarchy": {
+    "label": "*<<369097",
+    "expr": "*<<369097"
+  },
   "is-a": {
-    "label": "isa<<369097",
-    "expr": "isa<<369097"
+    "label": "concept<<369097",
+    "expr": "concept<<369097"
   },
   "descendent-of": {
-    "label": "isa<369097",
-    "expr": "isa<369097"
+    "label": "concept<369097",
+    "expr": "concept<369097"
   },
   "child-of": {
-    "label": "isa<!369097",
-    "expr": "isa<!369097"
+    "label": "concept<!369097",
+    "expr": "concept<!369097"
   },
   "is-not-a": {
-    "label": "isa~<<369097",
-    "expr": "isa~<<369097"
+    "label": "concept~<<369097",
+    "expr": "concept~<<369097"
   },
   "generalizes": {
-    "label": "isa>>308291",
-    "expr": "isa>>308291"
+    "label": "concept>>308291",
+    "expr": "concept>>308291"
   },
   "descendent-leaf": {
-    "label": "isa!!<369097",
-    "expr": "isa!!<369097"
+    "label": "concept!!<369097",
+    "expr": "concept!!<369097"
   }
 }

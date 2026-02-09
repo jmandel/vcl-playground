@@ -1,0 +1,13 @@
+{
+  "scripts": {
+    "antlr:generate": "bash scripts/update-antlr-generated.sh",
+    "antlr:check": "bash scripts/check-antlr-generated.sh",
+    "test": "bun test",
+    "build": "bash build.sh"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "antlr-ng": "^1.0.10",
+    "antlr4ng": "^3.0.16"
+  }
+}

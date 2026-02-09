@@ -54,8 +54,9 @@ td code { white-space: nowrap; }
 
 /* Side-by-side */
 .side-by-side { display: grid; grid-template-columns: 1fr 1fr; gap: 1em; margin: 1em 0; }
-.side-by-side > div { background: var(--code-bg); border-radius: 8px; padding: 1em; }
+.side-by-side > div { background: var(--code-bg); border-radius: 8px; padding: 1em; min-width: 0; }
 .side-by-side h4 { margin: 0 0 0.5em; font-size: 0.85em; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.side-by-side pre { max-width: 100%; }
 @media (max-width: 700px) { .side-by-side { grid-template-columns: 1fr; } }
 
 /* Concept model diagram */
@@ -325,7 +326,7 @@ nav a:hover { color: var(--accent); }
 <div class="step">
   <h3>Step 1: Codes</h3>
   <p>The simplest VCL expression is a code literal. It selects exactly one concept.</p>
-  <pre><code>161</code></pre>
+  <pre><code data-vcl-expr-key="code-161"></code></pre>
   <p>This matches the single concept with code <code>161</code> &mdash; acetaminophen. If a code contains
   special characters, quote it: <code>"161"</code> or <code>"J45.0"</code>.</p>
   <div class="try-it"><button class="try-btn" onclick="tryExample('code-161')">Try: 161</button>
@@ -335,11 +336,11 @@ nav a:hover { color: var(--accent); }
 <div class="step">
   <h3>Step 2: Filters &mdash; <code>property = value</code></h3>
   <p>A filter selects all concepts where a property matches a value. The basic form is:</p>
-  <pre><code>has_ingredient = 161</code></pre>
+  <pre><code data-vcl-expr-key="filter-ingredient"></code></pre>
   <p>This means: <em>"all concepts whose <code>has_ingredient</code> property points to code 161 (acetaminophen)"</em>.
   In RxNorm, these are the SCDCs &mdash; drug components like "acetaminophen 500 MG".</p>
   <p>For literal (string) properties, the value is just a code too:</p>
-  <pre><code>TTY = SCD</code></pre>
+  <pre><code data-vcl-expr-key="filter-tty"></code></pre>
   <p>This matches all Semantic Clinical Drugs in the dataset.</p>
   <div class="try-it">
     <button class="try-btn" onclick="tryExample('filter-ingredient')">Try: has_ingredient=161</button>
@@ -352,26 +353,26 @@ nav a:hover { color: var(--accent); }
   <h3>Step 3: The "of" operator &mdash; <code>value.property</code> (dot navigation)</h3>
   <p>The dot <code>.</code> reverses the direction. Instead of "find things with this property", it says
   "start at this code, follow this property outward":</p>
-  <pre><code>104906.has_tradename</code></pre>
+  <pre><code data-vcl-expr-key="of-tradename"></code></pre>
   <p>Start at acetaminophen 24 MG/ML Oral Solution (104906), follow <code>has_tradename</code> edges
   &rarr; returns all branded versions of that drug.</p>
-  <p>Chain dots with curly braces for multi-hop traversal:</p>
-  <pre><code>{104906.has_tradename}.has_ingredient</code></pre>
+  <p>Chain dots directly for multi-hop traversal:</p>
+  <pre><code data-vcl-expr-key="of-chained"></code></pre>
   <p>Start at an SCD &rarr; follow <code>has_tradename</code> to get SBDs &rarr; follow <code>has_ingredient</code>
   to get the brand names associated with those branded drugs.</p>
   <div class="try-it">
-    <button class="try-btn" onclick="tryExample('of-tradename')">Try: 104906.has_tradename</button>
-    <button class="try-btn" onclick="tryExample('of-chained')">Try: {104906.has_tradename}.has_ingredient</button>
+    <button class="try-btn" onclick="tryExample('of-tradename')">Try: single-hop navigation</button>
+    <button class="try-btn" onclick="tryExample('of-chained')">Try: multi-hop navigation</button>
   </div>
 </div>
 
 <div class="step">
   <h3>Step 4: AND and OR &mdash; <code>,</code> and <code>;</code></h3>
   <p>Comma means <strong>AND</strong> (intersection): both conditions must hold.</p>
-  <pre><code>has_ingredient=161, has_dose_form=317541</code></pre>
+  <pre><code data-vcl-expr-key="and-ingredient-df"></code></pre>
   <p><em>Concepts that have ingredient acetaminophen AND dose form Oral Tablet.</em></p>
   <p>Semicolon means <strong>OR</strong> (union): either condition suffices.</p>
-  <pre><code>has_ingredient=161; has_ingredient=5640</code></pre>
+  <pre><code data-vcl-expr-key="or-ingredients"></code></pre>
   <p><em>Concepts that have ingredient acetaminophen OR ibuprofen.</em></p>
   <p>Use parentheses to group: <code>(A,B);(C,D)</code> means "(A and B) or (C and D)".</p>
   <div class="try-it">
@@ -381,25 +382,42 @@ nav a:hover { color: var(--accent); }
 </div>
 
 <div class="step">
-  <h3>Step 5: Nesting with <code>^</code> and <code>{...}</code></h3>
-  <p>The <code>^</code> (<code>in</code>) operator with a filter list <code>{...}</code> enables graph traversal through
+  <h3>Step 5: Nesting with <code>^</code> and <code>(...)</code></h3>
+  <p>The <code>^</code> (<code>in</code>) operator with a nested expression <code>(...)</code> enables graph traversal through
   intermediate nodes:</p>
-  <pre><code>consists_of^{has_ingredient=161}</code></pre>
+  <pre><code data-vcl-expr-key="in-filter-list"></code></pre>
   <p>Read this as: <em>"concepts whose <code>consists_of</code> property points to something that matches
   <code>has_ingredient=161</code>"</em>. In other words: SCDs that consist of a component containing acetaminophen.</p>
+  <p>Rewrite rule: <code>a.b=x</code> is equivalent to <code>a^(b=x)</code>.</p>
+  <div class="side-by-side">
+    <div>
+      <h4>Nested Membership</h4>
+      <pre><code data-vcl-expr-key="in-filter-list"></code></pre>
+    </div>
+    <div>
+      <h4>Dotted Path</h4>
+      <pre><code data-vcl-expr-key="in-filter-list-dotted"></code></pre>
+    </div>
+  </div>
   <p>Nesting can go deeper:</p>
-  <pre><code>consists_of^{has_ingredient=161}, has_dose_form=317541</code></pre>
+  <pre><code data-vcl-expr-key="nesting-deep"></code></pre>
   <p><em>SCDs containing acetaminophen in Oral Tablet form.</em></p>
+  <p>To OR across different property paths, use explicit disjunction such as
+  <code>consists_of.has_ingredient=1191;has_ingredient=1191</code>.</p>
+  <p>For hierarchy operators, <code>*</code> is shorthand for <code>concept</code>:</p>
+  <pre><code data-vcl-expr-key="star-concept-hierarchy"></code></pre>
   <div class="try-it">
-    <button class="try-btn" onclick="tryExample('in-filter-list')">Try: consists_of^{has_ingredient=161}</button>
+    <button class="try-btn" onclick="tryExample('in-filter-list')">Try: nested membership</button>
+    <button class="try-btn" onclick="tryExample('in-filter-list-dotted')">Try: dotted rewrite</button>
     <button class="try-btn" onclick="tryExample('nesting-deep')">Try: + Oral Tablet</button>
+    <button class="try-btn" onclick="tryExample('star-concept-hierarchy')">Try: * hierarchy shorthand</button>
   </div>
 </div>
 
 <div class="step">
   <h3>Step 6: Exclusion &mdash; <code>-</code></h3>
   <p>The minus operator subtracts one set from another:</p>
-  <pre><code>(has_ingredient=161)-(has_ingredient=5489)</code></pre>
+  <pre><code data-vcl-expr-key="exclusion"></code></pre>
   <p><em>Concepts containing acetaminophen but NOT hydrocodone.</em> Useful for excluding combination drugs.</p>
   <div class="try-it">
     <button class="try-btn" onclick="tryExample('exclusion')">Try: acetaminophen minus hydrocodone</button>
@@ -409,34 +427,34 @@ nav a:hover { color: var(--accent); }
 <div class="step">
   <h3>Step 7: System Scoping</h3>
   <p>When combining multiple code systems, prefix each sub-expression with the system URI in parentheses:</p>
-  <pre><code>(http://www.nlm.nih.gov/research/umls/rxnorm)(has_ingredient=161)</code></pre>
+  <pre><code data-vcl-expr-key="scope-rxnorm-filter-ingredient"></code></pre>
   <p>This tutorial's dataset is all RxNorm, so system scoping isn't needed here &mdash; but it's essential
   when building multi-system ValueSets (e.g., LOINC + SNOMED + CPT in one expression).</p>
 </div>
 
 <div class="step">
-  <h3>Step 8: Code Lists and ValueSet Includes</h3>
-  <p>List multiple codes with semicolons (union) or curly braces (for <code>in</code> operator):</p>
-  <p>A curly-brace code list must contain at least two codes.</p>
-  <pre><code>has_ingredient^{161,5640,1191}</code></pre>
+  <h3>Step 8: Code Sets and ValueSet Includes</h3>
+  <p>Use parenthesized set expressions with semicolons for OR:</p>
+  <p>A parenthesized code set may contain one or more codes.</p>
+  <pre><code data-vcl-expr-key="in-code-list"></code></pre>
   <p><em>Concepts whose ingredient is acetaminophen, ibuprofen, OR aspirin.</em></p>
   <p>Include an entire ValueSet with <code>^</code>:</p>
-  <pre><code>^http://example.com/ValueSet/analgesics</code></pre>
+  <pre><code data-vcl-expr-key="vs-analgesics"></code></pre>
   <p><em>All codes that are members of the referenced ValueSet.</em></p>
   <div class="try-it">
-    <button class="try-btn" onclick="tryExample('in-code-list')">Try: has_ingredient^{161,5640,1191}</button>
+    <button class="try-btn" onclick="tryExample('in-code-list')">Try: code-set membership</button>
   </div>
 </div>
 
 <div class="step">
   <h3>Step 9: Regex and Exists</h3>
   <p><code>/</code> applies a regex match to a property's value:</p>
-  <pre><code>RXN_STRENGTH/".*500.*"</code></pre>
+  <pre><code data-vcl-expr-key="regex-strength"></code></pre>
   <p><em>Concepts whose strength contains "500".</em> Combine with other filters to narrow down:</p>
-  <pre><code>display/".*minophen.*", TTY=SCD</code></pre>
+  <pre><code data-vcl-expr-key="regex-display"></code></pre>
   <p><em>All SCDs whose display name matches "minophen" (acetaminophen, etc.).</em></p>
   <p><code>?</code> tests whether a property has any value at all:</p>
-  <pre><code>has_tradename?true</code></pre>
+  <pre><code data-vcl-expr-key="exists-tradename"></code></pre>
   <p><em>Concepts that have at least one tradename (i.e., generic drugs with branded versions).</em></p>
   <div class="try-it">
     <button class="try-btn" onclick="tryExample('regex-display')">Try: display regex</button>
@@ -456,18 +474,29 @@ nav a:hover { color: var(--accent); }
   <p><strong>Question:</strong> "Give me all SCD (generic drug) codes for ibuprofen in oral tablet form."</p>
   <p><strong>Approach:</strong> We need three conditions to intersect: TTY must be SCD, the drug must consist of
   a component containing ibuprofen (5640), and dose form must be Oral Tablet (317541). Since SCDs don't
-  directly have <code>has_ingredient</code> edges, we use <code>consists_of^{has_ingredient=5640}</code>
-  to match SCDs whose components include ibuprofen.</p>
-  <pre><code>TTY=SCD, consists_of^{has_ingredient=5640}, has_dose_form=317541</code></pre>
+  directly have <code>has_ingredient</code> edges, we can write either nested-membership or dotted-path form:</p>
+  <div class="side-by-side">
+    <div>
+      <h4>Nested Membership</h4>
+      <pre><code data-vcl-expr-key="walkthrough-ibuprofen-tablets"></code></pre>
+    </div>
+    <div>
+      <h4>Dotted Path Rewrite</h4>
+      <pre><code data-vcl-expr-key="walkthrough-ibuprofen-tablets-dotted"></code></pre>
+    </div>
+  </div>
   <p>The commas mean AND &mdash; all three filters must match on the same concept.</p>
-  <div class="try-it"><button class="try-btn" onclick="tryExample('walkthrough-ibuprofen-tablets')">Run this query</button></div>
+  <div class="try-it">
+    <button class="try-btn" onclick="tryExample('walkthrough-ibuprofen-tablets')">Run: nested form</button>
+    <button class="try-btn" onclick="tryExample('walkthrough-ibuprofen-tablets-dotted')">Run: dotted form</button>
+  </div>
 </div>
 
 <div class="step">
   <h3>Example 2: All branded versions of acetaminophen 24 MG/ML Oral Solution</h3>
   <p><strong>Question:</strong> "I know the generic drug acetaminophen 24 MG/ML Oral Solution (104906). What are its brand-name versions?"</p>
   <p><strong>Approach:</strong> Navigate from the SCD via <code>has_tradename</code>:</p>
-  <pre><code>104906.has_tradename</code></pre>
+  <pre><code data-vcl-expr-key="walkthrough-tradename"></code></pre>
   <p>The dot starts at code 104906 and follows the <code>has_tradename</code> property outward, returning all SBDs.</p>
   <div class="try-it"><button class="try-btn" onclick="tryExample('of-tradename')">Run this query</button></div>
 </div>
@@ -476,7 +505,7 @@ nav a:hover { color: var(--accent); }
   <h3>Example 3: All drugs containing acetaminophen but not hydrocodone</h3>
   <p><strong>Question:</strong> "Find drugs with acetaminophen, excluding combination products with hydrocodone (opioid)."</p>
   <p><strong>Approach:</strong> Use exclusion. Both sides query <code>has_ingredient</code>:</p>
-  <pre><code>(has_ingredient=161) - (has_ingredient=5489)</code></pre>
+  <pre><code data-vcl-expr-key="exclusion"></code></pre>
   <p>The first group finds everything containing acetaminophen; the minus removes anything also containing hydrocodone.</p>
   <div class="try-it"><button class="try-btn" onclick="tryExample('exclusion')">Run this query</button></div>
 </div>
@@ -484,18 +513,30 @@ nav a:hover { color: var(--accent); }
 <div class="step">
   <h3>Example 4: Multi-ingredient drugs &mdash; which SCDs contain both aspirin and caffeine?</h3>
   <p><strong>Question:</strong> "Find combination products with both aspirin and caffeine (like Excedrin)."</p>
-  <p><strong>Approach:</strong> Use nested filters with AND. We want SCDs that consist_of components with aspirin AND also consist_of components with caffeine:</p>
-  <pre><code>consists_of^{has_ingredient=1191}, consists_of^{has_ingredient=1886}</code></pre>
-  <div class="try-it"><button class="try-btn" onclick="tryExample('multi-ingredient-aspirin-caffeine')">Run this query</button></div>
+  <p><strong>Approach:</strong> Use nested filters with AND, or the equivalent dotted-path rewrite. Both return the same set:</p>
+  <div class="side-by-side">
+    <div>
+      <h4>Nested Membership</h4>
+      <pre><code data-vcl-expr-key="multi-ingredient-aspirin-caffeine"></code></pre>
+    </div>
+    <div>
+      <h4>Dotted Path Rewrite</h4>
+      <pre><code data-vcl-expr-key="multi-ingredient-aspirin-caffeine-dotted"></code></pre>
+    </div>
+  </div>
+  <div class="try-it">
+    <button class="try-btn" onclick="tryExample('multi-ingredient-aspirin-caffeine')">Run: nested form</button>
+    <button class="try-btn" onclick="tryExample('multi-ingredient-aspirin-caffeine-dotted')">Run: dotted form</button>
+  </div>
 </div>
 
 <div class="step">
   <h3>Example 5: What brand names exist for ibuprofen products?</h3>
   <p><strong>Question:</strong> "List all the brand names (BN) associated with any ibuprofen product."</p>
   <p><strong>Approach:</strong> Chain navigation: start at ibuprofen, go to SCDCs, then to SCDs, then to SBDs, then extract brand names:</p>
-  <pre><code>{({5640.ingredient_of}.constitutes).has_tradename}.has_ingredient</code></pre>
+  <pre><code data-vcl-expr-key="deep-of-chain"></code></pre>
   <p>Or more simply &mdash; since BN concepts have <code>tradename_of</code> pointing to IN:</p>
-  <pre><code>tradename_of=5640, TTY=BN</code></pre>
+  <pre><code data-vcl-expr-key="bn-ibuprofen"></code></pre>
   <div class="try-it">
     <button class="try-btn" onclick="tryExample('bn-ibuprofen')">Run: simple filter approach</button>
   </div>
@@ -508,8 +549,8 @@ nav a:hover { color: var(--accent); }
 <table>
   <tr><th>FHIR Op</th><th>VCL</th><th>Pattern</th><th>Example</th><th>Meaning</th></tr>
   <tr><td>=</td><td><code>=</code></td><td><code>prop=val</code></td><td><code class="vcl-try" data-example="filter-ingredient"></code></td><td>Property equals value</td></tr>
-  <tr><td>in</td><td><code>^</code></td><td><code>prop^{...}</code></td><td><code class="vcl-try" data-example="in-code-list"></code></td><td>Property value in set</td></tr>
-  <tr><td>not-in</td><td><code>~^</code></td><td><code>prop~^{...}</code></td><td><code class="vcl-try" data-example="not-in"></code></td><td>Property value not in set</td></tr>
+  <tr><td>in</td><td><code>^</code></td><td><code>prop^(...)</code></td><td><code class="vcl-try" data-example="in-code-list"></code></td><td>Property value in set</td></tr>
+  <tr><td>not-in</td><td><code>~^</code></td><td><code>prop~^(...)</code></td><td><code class="vcl-try" data-example="not-in"></code></td><td>Property value not in set</td></tr>
   <tr><td>exists</td><td><code>?</code></td><td><code>prop?true</code></td><td><code class="vcl-try" data-example="exists-tradename"></code></td><td>Property has any value</td></tr>
   <tr><td>regex</td><td><code>/</code></td><td><code>prop/"pat"</code></td><td><code class="vcl-try" data-example="regex-strength"></code></td><td>Property matches regex</td></tr>
   <tr><td>is-a</td><td><code>&lt;&lt;</code></td><td><code>prop&lt;&lt;code</code></td><td><code class="vcl-try" data-example="is-a"></code></td><td>Descendant or self</td></tr>
@@ -517,11 +558,14 @@ nav a:hover { color: var(--accent); }
   <tr><td>child-of</td><td><code>&lt;!</code></td><td><code>prop&lt;!code</code></td><td><code class="vcl-try" data-example="child-of"></code></td><td>Direct child only</td></tr>
   <tr><td>is-not-a</td><td><code>~&lt;&lt;</code></td><td><code>prop~&lt;&lt;code</code></td><td><code class="vcl-try" data-example="is-not-a"></code></td><td>NOT descendant or self</td></tr>
   <tr><td>generalizes</td><td><code>&gt;&gt;</code></td><td><code>prop&gt;&gt;code</code></td><td><code class="vcl-try" data-example="generalizes"></code></td><td>Ancestor or self</td></tr>
-  <tr><td>descendent-leaf</td><td><code>!!&lt;</code></td><td><code>prop!!&lt;code</code></td><td><code class="vcl-try" data-example="descendent-leaf"></code></td><td>Leaf descendants</td></tr>
-  <tr><td>of</td><td><code>.</code></td><td><code>val.prop</code></td><td><code class="vcl-try" data-example="of-tradename"></code></td><td>Navigate property from value</td></tr>
+<tr><td>descendent-leaf</td><td><code>!!&lt;</code></td><td><code>prop!!&lt;code</code></td><td><code class="vcl-try" data-example="descendent-leaf"></code></td><td>Leaf descendants</td></tr>
+<tr><td>of</td><td><code>.</code></td><td><code>val.prop</code></td><td><code class="vcl-try" data-example="of-tradename"></code></td><td>Navigate property from value</td></tr>
 </table>
+<p><strong>Hierarchy note:</strong> <code>&lt;&lt;</code>, <code>&lt;</code>, <code>&gt;&gt;</code>, <code>&lt;!</code>, and <code>!!&lt;</code> operate over the named property. Use <code>concept</code> for code hierarchy (for example <code>concept&lt;&lt;369097</code>). In this RxNorm prototype, <code>concept</code> hierarchy is backed by <code>isa</code> edges.</p>
+<p><strong>Property lhs rule:</strong> filter operators bind to a property path only: <code>code(.code)*</code>. Grouped expressions are set expressions and cannot appear on the left of filter operators (for example <code>(A;B)&lt;&lt;201</code> is invalid).</p>
+<p><strong>Star hierarchy shorthand:</strong> <code>*&lt;&lt;X</code> is shorthand for <code>concept&lt;&lt;X</code> (and similarly for <code>&lt;</code>, <code>&gt;&gt;</code>, <code>&lt;!</code>, <code>!!&lt;</code>, <code>~&lt;&lt;</code>).</p>
 <p>Set operators: <code>,</code> (AND/intersection), <code>;</code> (OR/union), <code>-</code> (exclusion/minus).</p>
-<p>Grouping: <code>(</code>...<code>)</code> for sub-expressions, <code>{</code>...<code>}</code> for nested filter lists and code lists.</p>
+<p>Grouping: <code>(</code>...<code>)</code> is used for sub-expressions and set expressions.</p>
 </section>
 
 <!-- ============================== FURTHER READING ============================== -->
@@ -544,13 +588,14 @@ nav a:hover { color: var(--accent); }
   <div id="examples-bar">
     <button class="example-btn" onclick="tryExample('code-161')">161</button>
     <button class="example-btn" onclick="tryExample('filter-ingredient')">has_ingredient=161</button>
-    <button class="example-btn" onclick="tryExample('of-tradename')">104906.has_tradename</button>
+    <button class="example-btn" onclick="tryExample('of-tradename')">Single-hop navigation</button>
     <button class="example-btn" onclick="tryExample('scd-ibuprofen')">SCD + ibuprofen</button>
-    <button class="example-btn" onclick="tryExample('in-filter-list')">consists_of^{...}</button>
+    <button class="example-btn" onclick="tryExample('in-filter-list')">consists_of^(...)</button>
     <button class="example-btn" onclick="tryExample('exclusion')">exclusion</button>
-    <button class="example-btn" onclick="tryExample('in-code-list')">^{code list}</button>
+    <button class="example-btn" onclick="tryExample('in-code-list')">^(code;set)</button>
     <button class="example-btn" onclick="tryExample('of-chained')">chained nav</button>
     <button class="example-btn" onclick="tryExample('star')">*</button>
+    <button class="example-btn" onclick="tryExample('star-concept-hierarchy')">*<<x</button>
   </div>
 
   <div id="playground-input-wrap">

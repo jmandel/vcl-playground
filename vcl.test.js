@@ -56,7 +56,7 @@ describe('compose output correctness', () => {
   });
 
   test('chained "of" generates URL string value (not nested object)', () => {
-    const ast = parseVCL('{104906.has_tradename}.has_ingredient');
+    const ast = parseVCL('(104906.has_tradename).has_ingredient');
     const compose = astToCompose(ast, system);
     expect(compose.include).toHaveLength(1);
     const filter = compose.include[0].filter[0];
@@ -67,7 +67,7 @@ describe('compose output correctness', () => {
   });
 
   test('"in" with filter list generates URL string value (not nested object)', () => {
-    const ast = parseVCL('consists_of^{has_ingredient=161}');
+    const ast = parseVCL('consists_of^(has_ingredient=161)');
     const compose = astToCompose(ast, system);
     const filter = compose.include[0].filter[0];
     expect(filter.property).toBe('consists_of');
@@ -91,6 +91,38 @@ describe('compose output correctness', () => {
     expect(compose.include).toHaveLength(1);
     expect(compose.include[0].filter).toHaveLength(2);
   });
+
+  test('conjunction preserves grouped source via valueSet dependency', () => {
+    const ast = parseVCL('(204574;204574;204574),has_tradename?true');
+    const { valueSets } = astToComposeCollection(ast, system);
+
+    const top = valueSets[0].compose.include[0];
+    expect(top.filter).toHaveLength(2);
+    const membership = top.filter.find((f) => f.property === 'concept' && f.op === 'in');
+    expect(membership).toBeDefined();
+    expect(membership.value).toContain('http://fhir.org/VCL?v1=');
+    expect(top.filter).toContainEqual({ property: 'has_tradename', op: 'exists', value: 'true' });
+
+    const dep = valueSets.find((vs) => vs.url === membership.value);
+    expect(dep).toBeDefined();
+    expect(dep.compose.include).toHaveLength(3);
+    const depCodes = dep.compose.include.map((inc) => inc.concept?.[0]?.code);
+    expect(depCodes).toEqual(['204574', '204574', '204574']);
+
+    const json = JSON.stringify(valueSets);
+    expect(json).not.toContain('(complex)');
+  });
+
+  test('conjunction with code + filter does not drop code term', () => {
+    const ast = parseVCL('204574,has_tradename?true');
+    const { valueSets } = astToComposeCollection(ast, system);
+
+    const top = valueSets[0].compose.include[0];
+    expect(top.filter).toContainEqual({ property: 'concept', op: '=', value: '204574' });
+    expect(top.filter).toContainEqual({ property: 'has_tradename', op: 'exists', value: 'true' });
+    expect(valueSets).toHaveLength(1);
+    expect(JSON.stringify(valueSets)).not.toContain('(complex)');
+  });
 });
 
 describe('astToComposeCollection', () => {
@@ -103,7 +135,7 @@ describe('astToComposeCollection', () => {
   });
 
   test('chained of produces top-level + dependency ValueSet', () => {
-    const ast = parseVCL('{104906.has_tradename}.has_ingredient');
+    const ast = parseVCL('(104906.has_tradename).has_ingredient');
     const { valueSets } = astToComposeCollection(ast, system);
     expect(valueSets.length).toBeGreaterThanOrEqual(2);
     // Top-level
@@ -122,7 +154,7 @@ describe('astToComposeCollection', () => {
   });
 
   test('in with filter list produces top-level + dependency ValueSet', () => {
-    const ast = parseVCL('consists_of^{has_ingredient=161}');
+    const ast = parseVCL('consists_of^(has_ingredient=161)');
     const { valueSets } = astToComposeCollection(ast, system);
     expect(valueSets.length).toBeGreaterThanOrEqual(2);
     expect(valueSets[0].url).toBeNull();
@@ -171,8 +203,8 @@ describe('astToVclText', () => {
   });
 
   test('chained of', () => {
-    const ast = parseVCL('{104906.has_tradename}.has_ingredient');
-    expect(astToVclText(ast)).toBe('{104906.has_tradename}.has_ingredient');
+    const ast = parseVCL('104906.has_tradename.has_ingredient');
+    expect(astToVclText(ast)).toBe('104906.has_tradename.has_ingredient');
   });
 
   test('conjunction', () => {
@@ -181,13 +213,13 @@ describe('astToVclText', () => {
   });
 
   test('in with code list', () => {
-    const ast = parseVCL('has_ingredient^{161,5640,1191}');
-    expect(astToVclText(ast)).toBe('has_ingredient^{161,5640,1191}');
+    const ast = parseVCL('has_ingredient^(161;5640;1191)');
+    expect(astToVclText(ast)).toBe('has_ingredient^(161;5640;1191)');
   });
 
   test('in with filter list', () => {
-    const ast = parseVCL('consists_of^{has_ingredient=161}');
-    expect(astToVclText(ast)).toBe('consists_of^{has_ingredient=161}');
+    const ast = parseVCL('consists_of^(has_ingredient=161)');
+    expect(astToVclText(ast)).toBe('consists_of^(has_ingredient=161)');
   });
 
   test('star', () => {
@@ -196,8 +228,8 @@ describe('astToVclText', () => {
   });
 
   test('code list', () => {
-    const ast = parseVCL('{161,5640}');
-    expect(astToVclText(ast)).toBe('{161,5640}');
+    const ast = parseVCL('(161;5640)');
+    expect(astToVclText(ast)).toBe('161;5640');
   });
 });
 
@@ -247,13 +279,103 @@ describe('parse-only tests (no data dependency)', () => {
   }
 });
 
-describe('strict code list grammar', () => {
-  test('rejects single-item code list in in operator', () => {
-    expect(() => parseVCL('has_ingredient^{161}')).toThrow();
+describe('set syntax', () => {
+  test('rejects square-bracket set syntax in in operator', () => {
+    expect(() => parseVCL('has_ingredient^[161;5640]')).toThrow();
   });
 
-  test('rejects single-item braced code expression', () => {
-    expect(() => parseVCL('{161}')).toThrow();
+  test('rejects square-bracket standalone set syntax', () => {
+    expect(() => parseVCL('[161;5640]')).toThrow();
+  });
+
+  test('rejects square-bracket property lhs syntax', () => {
+    expect(() => parseVCL('[has_ingredient;tradename_of]=5640')).toThrow();
+  });
+
+  test('accepts parenthesized one-item set expression', () => {
+    const ast = parseVCL('(161)');
+    expect(ast).toBeDefined();
+  });
+});
+
+describe('star hierarchy shorthand', () => {
+  test('star hierarchy shorthand maps to concept hierarchy', () => {
+    const shorthand = parseVCL('*<<369097');
+    const explicit = parseVCL('concept<<369097');
+    expect(astToVclText(shorthand)).toBe('concept<<369097');
+    expect(astToCompose(shorthand, system)).toEqual(astToCompose(explicit, system));
+    expect(evaluate(shorthand)).toEqual(evaluate(explicit));
+  });
+
+  test('grouped expressions are not valid property lhs', () => {
+    expect(() => parseVCL('(has_ingredient;tradename_of)=5640')).toThrow();
+    expect(() => parseVCL('(a;b)<<201')).toThrow();
+  });
+});
+
+describe('dotted path semantics', () => {
+  test('accepts bare multi-hop navigation without extra parentheses', () => {
+    const ast = parseVCL('104906.has_tradename.has_ingredient');
+    expect(astToVclText(ast)).toBe('104906.has_tradename.has_ingredient');
+  });
+
+  test('multi-hop navigation matches explicit parenthesized form', () => {
+    const compact = evaluate(parseVCL('104906.has_tradename.has_ingredient'));
+    const explicit = evaluate(parseVCL('(104906.has_tradename).has_ingredient'));
+    expect(compact).toEqual(explicit);
+  });
+
+  test('dotted property filter lowers to nested membership semantics', () => {
+    const dotted = parseVCL('consists_of.has_ingredient=161');
+    const nested = parseVCL('consists_of^(has_ingredient=161)');
+    expect(astToCompose(dotted, system)).toEqual(astToCompose(nested, system));
+    expect(evaluate(dotted)).toEqual(evaluate(nested));
+  });
+
+  test('deep dotted property filters also lower to nested membership', () => {
+    const dotted = parseVCL('tradename_of.has_ingredient.TTY=SCD');
+    const nested = parseVCL('tradename_of^(has_ingredient^(TTY=SCD))');
+    expect(astToCompose(dotted, system)).toEqual(astToCompose(nested, system));
+    expect(evaluate(dotted)).toEqual(evaluate(nested));
+  });
+
+  test('star navigation cannot be used as a filter lhs', () => {
+    expect(() => parseVCL('*.consists_of.has_ingredient=1191')).toThrow();
+  });
+
+  test('grouped expressions cannot be used as a filter lhs', () => {
+    expect(() => parseVCL('(204574).consists_of.has_ingredient=1191')).toThrow();
+  });
+});
+
+describe('concept hierarchy alias semantics', () => {
+  test('concept is-a matches isa is-a in RxNorm prototype', () => {
+    const conceptAst = parseVCL('concept<<369097');
+    const isaAst = parseVCL('isa<<369097');
+    expect(evaluate(conceptAst)).toEqual(evaluate(isaAst));
+  });
+
+  test('concept generalizes matches isa generalizes in RxNorm prototype', () => {
+    const conceptAst = parseVCL('concept>>308291');
+    const isaAst = parseVCL('isa>>308291');
+    expect(evaluate(conceptAst)).toEqual(evaluate(isaAst));
+  });
+
+  test('custom terminology resolver can remap concept hierarchy property', () => {
+    const evalCustom = createEvaluator(DB, {
+      resolveTerminologyProfile: () => ({ conceptHierarchyProperty: 'tradename_of' }),
+    });
+    const conceptAst = parseVCL('concept<<5640');
+    const remappedAst = parseVCL('tradename_of<<5640');
+    expect(evalCustom(conceptAst)).toEqual(evalCustom(remappedAst));
+  });
+
+  test('unknown terminology does not assume isa hierarchy for concept', () => {
+    const unknownSystemEvaluator = createEvaluator({ ...DB, system: 'http://example.org/codesystem' });
+    const conceptAst = parseVCL('concept<<369097');
+    const isaAst = parseVCL('isa<<369097');
+    expect(unknownSystemEvaluator(conceptAst)).not.toEqual(unknownSystemEvaluator(isaAst));
+    expect(unknownSystemEvaluator(conceptAst)).toEqual(new Set(['369097']));
   });
 });
 

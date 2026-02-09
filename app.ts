@@ -1,6 +1,7 @@
 import { parseVCL, indexData, createEvaluator, astToComposeCollection, prettyAST } from './vcl.js';
 import RXNORM_DATA from './rxnorm-subset.json';
 import EXAMPLES from './examples.json';
+import { expressionByKey, hydrateExpressionSnippets } from './expression-catalog.ts';
 
 // ==================== DATA INDEX ====================
 const DB = indexData(RXNORM_DATA);
@@ -9,9 +10,7 @@ const system = RXNORM_DATA.system;
 
 // ==================== EXAMPLES LOOKUP ====================
 function exampleExpr(name: string): string {
-  const ex = (EXAMPLES as Record<string, {label: string; expr: string}>)[name];
-  if (!ex) throw new Error(`Unknown example: ${name}`);
-  return ex.expr;
+  return expressionByKey(name);
 }
 
 // ==================== UI ====================
@@ -213,6 +212,9 @@ resultsBody.addEventListener('click', (e) => {
   const row = (e.target as HTMLElement).closest('tr[data-code]') as HTMLElement | null;
   if (row?.dataset.code) showPropertiesModal(row.dataset.code);
 });
+
+// Generate compose examples from data-vcl-compose attributes
+hydrateExpressionSnippets(document);
 
 // Generate compose examples from data-vcl-compose attributes
 document.querySelectorAll<HTMLElement>('[data-vcl-compose]').forEach(el => {

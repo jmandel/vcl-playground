@@ -1,0 +1,23 @@
+{
+  "scope-rxnorm-filter-ingredient": "(http://www.nlm.nih.gov/research/umls/rxnorm)(has_ingredient=161)",
+  "vs-analgesics": "^http://example.com/ValueSet/analgesics",
+  "deep-of-chain": "5640.ingredient_of.constitutes.has_tradename.has_ingredient",
+  "mixed-grouping-tablets": "(has_ingredient=161, has_dose_form=317541) ; (has_ingredient=5640, has_dose_form=317541)",
+  "of-from-filtered-set": "(has_ingredient=161,has_dose_form=317541).has_tradename",
+  "in-code-list-spaced": "has_ingredient ^ (161; 5640; 1191)",
+  "in-filter-list-spaced": "consists_of ^ (has_ingredient = 161)",
+  "in-nested-tradename-spaced": "consists_of ^ (has_ingredient ^ (has_tradename = 2201670))",
+  "in-vs-uri-controlled-substances": "has_ingredient ^ http://example.com/ValueSet/controlled-substances",
+  "scope-rxnorm-filter-ingredient-spaced": "(http://www.nlm.nih.gov/research/umls/rxnorm)(has_ingredient = 161)",
+  "scope-loinc-snomed-spaced": "(http://loinc.org)(SCALE_TYP = Doc) ; (http://snomed.info/sct)(concept << 404684003)",
+  "scope-rxnorm-and-ingredient-df": "(http://www.nlm.nih.gov/research/umls/rxnorm)(has_ingredient=161,has_dose_form=317541)",
+  "compose-code-literal-rxnorm": "(http://www.nlm.nih.gov/research/umls/rxnorm)(161)",
+  "compose-filter-rxnorm": "(http://www.nlm.nih.gov/research/umls/rxnorm)(has_ingredient=161)",
+  "compose-disjunction-rxnorm": "(http://www.nlm.nih.gov/research/umls/rxnorm)(has_ingredient=161;has_ingredient=5640)",
+  "compose-exclusion-rxnorm": "(http://www.nlm.nih.gov/research/umls/rxnorm)((has_ingredient=161)-(has_ingredient=5489))",
+  "compose-system-scoping": "(http://loinc.org)(SCALE_TYP=Doc);(http://snomed.info/sct)(concept<<404684003)",
+  "compose-vs-include": "^http://hl7.org/fhir/ValueSet/payeetype",
+  "compose-of-single-hop-rxnorm": "(http://www.nlm.nih.gov/research/umls/rxnorm)(104906.has_tradename)",
+  "compose-of-chained-rxnorm": "(http://www.nlm.nih.gov/research/umls/rxnorm)(104906.has_tradename.has_ingredient)",
+  "compose-nested-expression-membership-rxnorm": "(http://www.nlm.nih.gov/research/umls/rxnorm)(consists_of^(has_ingredient=161))"
+}

@@ -1,6 +1,15 @@
 import { parseVCL, astToComposeCollection } from './vcl.js';
+import { hydrateExpressionSnippets } from './expression-catalog.ts';
+import { VCL_GRAMMAR_SOURCE } from './generated/vcl-grammar-source.ts';
 
 const DEFAULT_SYSTEM = 'http://www.nlm.nih.gov/research/umls/rxnorm';
+
+hydrateExpressionSnippets(document);
+
+const grammarEl = document.querySelector<HTMLElement>('[data-antlr-grammar]');
+if (grammarEl) {
+  grammarEl.textContent = VCL_GRAMMAR_SOURCE;
+}
 
 document.querySelectorAll<HTMLElement>('[data-vcl-compose]').forEach(el => {
   const expr = el.dataset.vclCompose!;
