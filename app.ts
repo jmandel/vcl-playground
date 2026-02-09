@@ -196,12 +196,16 @@ function showPropertiesModal(code: string) {
     <div class="prop-modal-body"></div>`;
   modal.querySelector('.prop-modal-body')!.textContent = conceptJson(code);
   overlay.appendChild(modal);
-  const close = () => overlay.remove();
+  const onKeydown = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') close();
+  };
+  const close = () => {
+    document.removeEventListener('keydown', onKeydown);
+    overlay.remove();
+  };
   overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
   modal.querySelector('.prop-modal-close')!.addEventListener('click', close);
-  document.addEventListener('keydown', function handler(e) {
-    if (e.key === 'Escape') { close(); document.removeEventListener('keydown', handler); }
-  });
+  document.addEventListener('keydown', onKeydown);
   document.body.appendChild(overlay);
 }
 

@@ -207,6 +207,9 @@ class Parser {
       const codes = [firstCode];
       while (this.match(TT.COMMA)) codes.push(this.parseCode());
       this.expect(TT.RCRLY);
+      if (codes.length < 2) {
+        throw new ParseError('Code list must contain at least 2 codes', this.peek().pos);
+      }
 
       if (this.peek().type === TT.DOT) {
         this.advance();
@@ -214,7 +217,6 @@ class Parser {
         return {type: 'of', value: {type: 'codeList', codes}, property: prop, systemUri};
       }
 
-      if (codes.length === 1) return {type: 'code', value: codes[0], systemUri};
       return {type: 'codeList', codes, systemUri};
     }
 
@@ -269,7 +271,7 @@ class Parser {
         const after = this.peek();
         this.pos = saved;
 
-        if (this.isOperator(after.type)) {
+        if (this.isOperator(after.type) || after.type === TT.DOT) {
           const fl = this.parseFilterList();
           return {type: 'filter', property, op: inOp, value: fl, systemUri};
         } else {
@@ -288,6 +290,9 @@ class Parser {
     const codes = [this.parseCode()];
     while (this.match(TT.COMMA)) codes.push(this.parseCode());
     this.expect(TT.RCRLY);
+    if (codes.length < 2) {
+      throw new ParseError('Code list must contain at least 2 codes', this.peek().pos);
+    }
     return {type: 'codeList', codes};
   }
 
@@ -352,13 +357,70 @@ function indexData(d) {
 
   const allCodes = new Set(d.concepts.map(c => c.code));
 
-  return { byCode, edgesBySource, edgesByTarget, literalsByCode, allCodes, concepts: d.concepts };
+  return { byCode, edgesBySource, edgesByTarget, literalsByCode, allCodes, concepts: d.concepts, system: d.system || null };
 }
 
 // ==================== EVALUATOR ====================
-function createEvaluator(DB) {
+function createEvaluator(DB, options) {
+  options = options || {};
+  const userResolver = typeof options.resolveValueSet === 'function' ? options.resolveValueSet : null;
+  const resolvingUris = new Set();
+
+  function decodeImplicitVclUri(uri) {
+    const normalized = uri.replace(/%28/gi, '(').replace(/%29/gi, ')');
+    let u;
+    try {
+      u = new URL(normalized);
+    } catch (e) {
+      return null;
+    }
+    if (u.origin + u.pathname !== 'http://fhir.org/VCL') return null;
+    const v1 = u.searchParams.get('v1');
+    if (!v1) return null;
+    let decoded = v1;
+    try { decoded = decodeURIComponent(v1); } catch (e) { /* already decoded */ }
+    const m = decoded.match(/^\(([^)]+)\)\(([\s\S]*)\)$/);
+    if (!m) return null;
+    return { system: m[1], expr: m[2] };
+  }
+
+  function toSet(v) {
+    if (v == null) return null;
+    if (v instanceof Set) return v;
+    if (Array.isArray(v)) return new Set(v);
+    if (typeof v[Symbol.iterator] === 'function') return new Set(v);
+    return null;
+  }
+
+  function defaultResolveValueSet(uri) {
+    const decoded = decodeImplicitVclUri(uri);
+    if (!decoded) return null;
+    if (DB.system && decoded.system !== DB.system) return new Set();
+    try {
+      return evaluate(parseVCL(decoded.expr));
+    } catch (e) {
+      return new Set();
+    }
+  }
+
+  function resolveValueSetCodes(uri) {
+    if (resolvingUris.has(uri)) return new Set();
+    resolvingUris.add(uri);
+    try {
+      const fromUser = toSet(userResolver ? userResolver(uri) : null);
+      if (fromUser) return fromUser;
+      const fromDefault = toSet(defaultResolveValueSet(uri));
+      if (fromDefault) return fromDefault;
+      return null;
+    } finally {
+      resolvingUris.delete(uri);
+    }
+  }
 
   function evaluate(ast) {
+    if (ast && ast.systemUri && DB.system && ast.systemUri !== DB.system) {
+      return new Set();
+    }
     switch (ast.type) {
       case 'star':
         return new Set(DB.allCodes);
@@ -404,7 +466,7 @@ function createEvaluator(DB) {
       }
 
       case 'includeVs':
-        return new Set();
+        return resolveValueSetCodes(ast.uri) || new Set();
 
       case 'filterList': {
         let result = null;
@@ -491,6 +553,9 @@ function createEvaluator(DB) {
           else nested = intersect(nested, fResult);
         }
         matchSet = nested || new Set();
+      } else if (value.type === 'vsRef') {
+        matchSet = resolveValueSetCodes(value.uri);
+        if (matchSet === null) return results;
       } else {
         return results;
       }
@@ -615,42 +680,50 @@ function createEvaluator(DB) {
 
 // ==================== AST TO VCL TEXT ====================
 function astToVclText(node) {
+  function withSystem(n, text, grouped) {
+    if (!n || !n.systemUri) return text;
+    return grouped ? `(${n.systemUri})(${text})` : `(${n.systemUri})${text}`;
+  }
+
   switch (node.type) {
-    case 'code': return node.value;
-    case 'star': return '*';
-    case 'codeList': return '{' + node.codes.join(',') + '}';
+    case 'code': return withSystem(node, node.value, false);
+    case 'star': return withSystem(node, '*', false);
+    case 'codeList': return withSystem(node, '{' + node.codes.join(',') + '}', false);
     case 'filter': {
       const opMap = {'=':'=', 'is-a':'<<', 'is-not-a':'~<<', 'descendent-of':'<',
         'generalizes':'>>', 'child-of':'<!', 'descendent-leaf':'!!<', 'exists':'?',
         'regex':'/', 'in':'^', 'not-in':'~^'};
       const opStr = opMap[node.op] || node.op;
-      if (node.op === 'regex') return node.property + '/"' + node.value + '"';
+      if (node.op === 'regex') return withSystem(node, node.property + '/"' + node.value + '"', false);
       if (node.op === 'in' || node.op === 'not-in') {
-        if (node.value && node.value.type === 'vsRef') return node.property + opStr + node.value.uri;
-        if (node.value && node.value.type === 'codeList') return node.property + opStr + '{' + node.value.codes.join(',') + '}';
-        if (node.value && node.value.type === 'filterList') return node.property + opStr + astToVclText(node.value);
-        return node.property + opStr + astToVclText(node.value);
+        if (node.value && node.value.type === 'vsRef') return withSystem(node, node.property + opStr + node.value.uri, false);
+        if (node.value && node.value.type === 'codeList') return withSystem(node, node.property + opStr + '{' + node.value.codes.join(',') + '}', false);
+        if (node.value && node.value.type === 'filterList') return withSystem(node, node.property + opStr + astToVclText(node.value), false);
+        return withSystem(node, node.property + opStr + astToVclText(node.value), false);
       }
-      return node.property + opStr + (typeof node.value === 'string' ? node.value : astToVclText(node.value));
+      return withSystem(node, node.property + opStr + (typeof node.value === 'string' ? node.value : astToVclText(node.value)), false);
     }
-    case 'filterList': return '{' + node.filters.map(f => astToVclText(f)).join(',') + '}';
+    case 'filterList': return withSystem(node, '{' + node.filters.map(f => astToVclText(f)).join(',') + '}', false);
     case 'of': {
       const valText = astToVclText(node.value);
       // Wrap in braces if inner is complex, but filterList/codeList already include braces
       const needsBraces = node.value.type !== 'code' && node.value.type !== 'star'
         && node.value.type !== 'filterList' && node.value.type !== 'codeList';
-      return (needsBraces ? '{' + valText + '}' : valText) + '.' + node.property;
+      return withSystem(node, (needsBraces ? '{' + valText + '}' : valText) + '.' + node.property, false);
     }
-    case 'conjunction': return node.parts.map(p => astToVclText(p)).join(',');
-    case 'disjunction': return node.parts.map(p => astToVclText(p)).join(';');
-    case 'exclusion': return '(' + astToVclText(node.include) + ')-(' + astToVclText(node.exclude) + ')';
-    case 'includeVs': return '^' + node.uri;
+    case 'conjunction': return withSystem(node, node.parts.map(p => astToVclText(p)).join(','), true);
+    case 'disjunction': return withSystem(node, node.parts.map(p => astToVclText(p)).join(';'), true);
+    case 'exclusion': return withSystem(node, '(' + astToVclText(node.include) + ')-(' + astToVclText(node.exclude) + ')', true);
+    case 'includeVs': return withSystem(node, '^' + node.uri, false);
     default: return '(?)';
   }
 }
 
 function vclUrl(system, node) {
   const vclText = astToVclText(node);
+  if (node && node.systemUri) {
+    return 'http://fhir.org/VCL?v1=' + encodeURIComponent(vclText);
+  }
   return 'http://fhir.org/VCL?v1=' + encodeURIComponent('(' + system + ')(' + vclText + ')');
 }
 

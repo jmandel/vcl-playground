@@ -246,3 +246,74 @@ describe('parse-only tests (no data dependency)', () => {
     });
   }
 });
+
+describe('strict code list grammar', () => {
+  test('rejects single-item code list in in operator', () => {
+    expect(() => parseVCL('has_ingredient^{161}')).toThrow();
+  });
+
+  test('rejects single-item braced code expression', () => {
+    expect(() => parseVCL('{161}')).toThrow();
+  });
+});
+
+describe('system scoping round-trip', () => {
+  test('astToVclText preserves scoped simple expression', () => {
+    const expr = '(http://loinc.org)(SCALE_TYP=Doc)';
+    const ast = parseVCL(expr);
+    expect(astToVclText(ast)).toBe('(http://loinc.org)SCALE_TYP=Doc');
+  });
+
+  test('astToVclText preserves scoped grouped expression', () => {
+    const expr = '(http://snomed.info/sct)(concept<<404684003;concept<<71388002)';
+    const ast = parseVCL(expr);
+    expect(astToVclText(ast)).toBe(expr);
+  });
+});
+
+describe('ValueSet URI resolver integration', () => {
+  function toVclUri(uri) {
+    return uri.replace(/\(/g, '%28').replace(/\)/g, '%29');
+  }
+
+  function makeRxNormSubsetResolver() {
+    let localEvaluate;
+    const resolver = (uri) => {
+      if (!uri.startsWith('http://fhir.org/VCL?v1=')) return null;
+      const encoded = uri.slice('http://fhir.org/VCL?v1='.length);
+      const decoded = decodeURIComponent(encoded);
+      const m = decoded.match(/^\(([^)]+)\)\((.*)\)$/);
+      if (!m) return null;
+      const [, scopedSystem, scopedExpr] = m;
+      if (scopedSystem !== system) return new Set();
+      const ast = parseVCL(scopedExpr);
+      return localEvaluate(ast);
+    };
+    localEvaluate = createEvaluator(DB, { resolveValueSet: resolver });
+    return resolver;
+  }
+
+  test('includeVs resolves via resolver', () => {
+    const resolver = makeRxNormSubsetResolver();
+    const evalWithResolver = createEvaluator(DB, { resolveValueSet: resolver });
+    const uri = toVclUri(vclUrl(system, parseVCL('161')));
+    const results = evalWithResolver(parseVCL(`^${uri}`));
+    expect(results.has('161')).toBeTrue();
+    expect(results.size).toBe(1);
+  });
+
+  test('in/not-in with URI resolves via resolver', () => {
+    const resolver = makeRxNormSubsetResolver();
+    const evalWithResolver = createEvaluator(DB, { resolveValueSet: resolver });
+    const uri = toVclUri(vclUrl(system, parseVCL('161')));
+
+    const inResults = evalWithResolver(parseVCL(`has_ingredient^${uri}`));
+    const eqResults = evaluate(parseVCL('has_ingredient=161'));
+    expect(inResults).toEqual(eqResults);
+
+    const notInResults = evalWithResolver(parseVCL(`has_ingredient~^${uri}`));
+    const all = evaluate(parseVCL('*'));
+    for (const code of inResults) expect(notInResults.has(code)).toBeFalse();
+    expect(inResults.size + notInResults.size).toBe(all.size);
+  });
+});

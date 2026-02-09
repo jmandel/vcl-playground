@@ -80,8 +80,8 @@
     "expr": "TTY=SCD,consists_of^{has_ingredient=5640}"
   },
   "not-in": {
-    "label": "has_ingredient~^{5489}",
-    "expr": "has_ingredient~^{5489}"
+    "label": "has_ingredient~^{5489,161}",
+    "expr": "has_ingredient~^{5489,161}"
   },
   "of-filter-list": {
     "label": "{TTY=SCD,has_dose_form=317541}.has_tradename",
