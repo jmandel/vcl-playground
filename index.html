@@ -35,6 +35,9 @@ nav { background: white; border-bottom: 1px solid var(--border); padding: 0.5em 
   display: flex; gap: 1.5em; flex-wrap: wrap; font-size: 0.82em; }
 nav a { text-decoration: none; color: var(--muted); padding: 0.25em 0; white-space: nowrap; }
 nav a:hover { color: var(--accent); }
+#branch-picker-slot { margin-left: auto; display: inline-flex; align-items: center; gap: 0.4em; color: var(--muted); }
+#branch-picker-slot label { font-size: 0.9em; }
+#branch-picker-slot select { font-size: 0.9em; border: 1px solid var(--border); border-radius: 4px; background: white; color: var(--fg); padding: 0.2em 0.35em; max-width: 18rem; }
 
 /* Definition lists */
 dl { margin: 1em 0; }
@@ -80,6 +83,7 @@ h2 .anchor-link:hover, h3 .anchor-link:hover { color: var(--accent); }
   <a href="#compose-mapping">Compose Mapping</a>
   <a href="#grammar">Grammar</a>
   <a href="tutorial.html" style="color: var(--accent);">Interactive Tutorial &rarr;</a>
+  <span id="branch-picker-slot"></span>
 </nav>
 
 <div class="container">
@@ -134,10 +138,9 @@ h2 .anchor-link:hover, h3 .anchor-link:hover { color: var(--accent); }
 
 <h3>Whitespace</h3>
 <p>
-  Spaces and tabs are insignificant and are ignored everywhere except within quoted values.
-  Newlines and carriage returns are <strong>not permitted</strong>.
-  This ensures VCL expressions are safe for use in single-line contexts such as URL parameters
-  and JSON string values.
+  Spaces, tabs, newlines, and carriage returns are insignificant and ignored everywhere except
+  within quoted values. Implementations may canonicalize expressions to compact single-line form
+  when embedding in URL parameters and JSON string values.
 </p>
 
 <h3>Codes and Quoting</h3>
@@ -662,9 +665,12 @@ to a separate ValueSet containing the nested expression.</p>
 <section id="grammar">
 <h2>Formal Grammar</h2>
 <p>
-  The authoritative VCL grammar, defined in <a href="https://www.antlr.org/">ANTLR 4</a>:
+  The authoritative VCL grammar, defined in <a href="https://www.antlr.org/">ANTLR 4</a>,
+  with parser rules followed by lexer token definitions:
 </p>
 <div class="grammar"><span class="c">grammar VCL;</span>
+
+<span class="c">// Parser rules</span>
 
 <span class="nt">vcl</span>         : <span class="nt">expr</span> EOF ;
 <span class="nt">expr</span>        : <span class="nt">subExpr</span> (<span class="nt">conjunction</span> | <span class="nt">disjunction</span> | <span class="nt">exclusion</span> )? ;
@@ -698,6 +704,7 @@ to a separate ValueSet containing the nested expression.</p>
 <span class="nt">code</span>        : <span class="t">SCODE</span> | <span class="t">QUOTED_VALUE</span> ;
 <span class="nt">str</span>         : <span class="t">QUOTED_VALUE</span> ;
 
+<span class="c">// Lexer tokens</span>
 <span class="t">DASH</span>  : <span class="t">'-'</span> ;    <span class="t">OPEN</span>  : <span class="t">'('</span> ;    <span class="t">CLOSE</span> : <span class="t">')'</span> ;
 <span class="t">LCRLY</span> : <span class="t">'{'</span> ;    <span class="t">RCRLY</span> : <span class="t">'}'</span> ;
 <span class="t">SEMI</span>  : <span class="t">';'</span> ;    <span class="t">COMMA</span> : <span class="t">','</span> ;
@@ -720,6 +727,7 @@ to a separate ValueSet containing the nested expression.</p>
 
 </div><!-- /.container -->
 <script type="module" src="./spec-app.ts"></script>
+<script type="module" src="./branch-picker.ts"></script>
 <script>
 document.querySelectorAll('h2, h3').forEach(h => {
   const id = h.id || (h.closest('section') && h.closest('section').id);

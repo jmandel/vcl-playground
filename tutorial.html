@@ -150,6 +150,9 @@ nav { background: white; border-bottom: 1px solid var(--border); padding: 0.5em 
   display: flex; gap: 1.5em; flex-wrap: wrap; font-size: 0.85em; }
 nav a { text-decoration: none; color: var(--muted); padding: 0.25em 0; }
 nav a:hover { color: var(--accent); }
+#branch-picker-slot { margin-left: auto; display: inline-flex; align-items: center; gap: 0.4em; color: var(--muted); }
+#branch-picker-slot label { font-size: 0.9em; }
+#branch-picker-slot select { font-size: 0.9em; border: 1px solid var(--border); border-radius: 4px; background: white; color: var(--fg); padding: 0.2em 0.35em; max-width: 18rem; }
 
 /* Concept detail popover */
 .concept-detail { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 1em;
@@ -175,6 +178,7 @@ nav a:hover { color: var(--accent); }
   <a href="#worked-examples">Worked Examples</a>
   <a href="#operators">Operators</a>
   <a href="#further-reading">Further Reading</a>
+  <span id="branch-picker-slot"></span>
 </nav>
 
 <div class="container">
@@ -584,6 +588,7 @@ nav a:hover { color: var(--accent); }
 </div><!-- /.container -->
 
 <!-- ============================== JAVASCRIPT ============================== -->
+<script type="module" src="./branch-picker.ts"></script>
 <script type="module" src="./app.ts"></script>
 </body>
 </html>
