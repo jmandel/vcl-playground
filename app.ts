@@ -232,12 +232,19 @@ document.querySelectorAll<HTMLElement>('[data-vcl-compose]').forEach(el => {
   }
 });
 
-// Validate and wire up clickable examples in operator reference table
-document.querySelectorAll<HTMLElement>('.vcl-try').forEach(el => {
-  const expr = el.dataset.expr!;
+// Populate and wire up clickable examples from examples.json
+document.querySelectorAll<HTMLElement>('.vcl-try[data-example]').forEach(el => {
+  const name = el.dataset.example!;
+  const ex = (EXAMPLES as Record<string, {label: string; expr: string}>)[name];
+  if (!ex) {
+    el.textContent = `Unknown example: ${name}`;
+    el.style.color = 'red';
+    return;
+  }
+  el.textContent = ex.label;
   try {
-    parseVCL(expr);
-    el.addEventListener('click', () => tryVCL(expr));
+    parseVCL(ex.expr);
+    el.addEventListener('click', () => tryVCL(ex.expr));
   } catch (e: any) {
     el.style.color = 'red';
     el.title = `Parse error: ${e.message}`;

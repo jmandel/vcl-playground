@@ -106,5 +106,29 @@
   "bn-ibuprofen": {
     "label": "tradename_of=5640,TTY=BN",
     "expr": "tradename_of=5640,TTY=BN"
+  },
+  "is-a": {
+    "label": "isa<<369097",
+    "expr": "isa<<369097"
+  },
+  "descendent-of": {
+    "label": "isa<369097",
+    "expr": "isa<369097"
+  },
+  "child-of": {
+    "label": "isa<!369097",
+    "expr": "isa<!369097"
+  },
+  "is-not-a": {
+    "label": "isa~<<369097",
+    "expr": "isa~<<369097"
+  },
+  "generalizes": {
+    "label": "isa>>308291",
+    "expr": "isa>>308291"
+  },
+  "descendent-leaf": {
+    "label": "isa!!<369097",
+    "expr": "isa!!<369097"
   }
 }

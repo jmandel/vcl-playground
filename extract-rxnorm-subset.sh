@@ -131,7 +131,7 @@ SELECT json_object(
     JOIN concept src ON src.concept_id = ce.source_concept_id
     JOIN concept tgt ON tgt.concept_id = ce.target_concept_id
     JOIN property_def pd ON pd.property_id = ce.property_id
-    WHERE ce.active = 1 AND pd.code NOT IN ('isa', 'inverse_isa')
+    WHERE ce.active = 1 AND pd.code != 'inverse_isa'
   ),
   'literals', (
     SELECT json_group_array(json_object(

@@ -512,6 +512,81 @@ function createEvaluator(DB) {
       return results;
     }
 
+    // Hierarchy operators: walk property edges transitively
+    if (op === 'is-a' || op === 'descendent-of' || op === 'child-of' ||
+        op === 'is-not-a' || op === 'generalizes' || op === 'descendent-leaf') {
+      const targetCode = typeof value === 'object' ? value.value : value;
+
+      if (op === 'generalizes') {
+        // Ancestors of targetCode (plus self): codes reachable by following property edges from targetCode
+        const ancestors = new Set();
+        const queue = [targetCode];
+        while (queue.length) {
+          const cur = queue.pop();
+          if (ancestors.has(cur)) continue;
+          ancestors.add(cur);
+          for (const e of (DB.edgesBySource.get(cur) || [])) {
+            if (e.property === property) queue.push(e.target);
+          }
+        }
+        for (const code of ancestors) {
+          if (DB.allCodes.has(code)) results.add(code);
+        }
+        return results;
+      }
+
+      // Descendants: codes whose property edge chain reaches targetCode
+      // Build reverse index for this property
+      const reverseEdges = new Map();
+      for (const code of DB.allCodes) {
+        for (const e of (DB.edgesBySource.get(code) || [])) {
+          if (e.property === property) {
+            if (!reverseEdges.has(e.target)) reverseEdges.set(e.target, []);
+            reverseEdges.get(e.target).push(code);
+          }
+        }
+      }
+
+      if (op === 'child-of') {
+        // Direct children only
+        for (const child of (reverseEdges.get(targetCode) || [])) results.add(child);
+        return results;
+      }
+
+      // BFS for all descendants
+      const descendants = new Set();
+      const queue = [targetCode];
+      while (queue.length) {
+        const cur = queue.pop();
+        for (const child of (reverseEdges.get(cur) || [])) {
+          if (!descendants.has(child)) {
+            descendants.add(child);
+            queue.push(child);
+          }
+        }
+      }
+
+      if (op === 'is-a') {
+        // Descendants + self
+        if (DB.allCodes.has(targetCode)) results.add(targetCode);
+        for (const d of descendants) results.add(d);
+      } else if (op === 'descendent-of') {
+        // Strict descendants only
+        for (const d of descendants) results.add(d);
+      } else if (op === 'is-not-a') {
+        // Everything NOT in is-a
+        for (const code of DB.allCodes) {
+          if (code !== targetCode && !descendants.has(code)) results.add(code);
+        }
+      } else if (op === 'descendent-leaf') {
+        // Descendants with no children of their own
+        for (const d of descendants) {
+          if (!reverseEdges.has(d) || reverseEdges.get(d).length === 0) results.add(d);
+        }
+      }
+      return results;
+    }
+
     return results;
   }
 

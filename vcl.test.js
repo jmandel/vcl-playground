@@ -211,6 +211,25 @@ describe('vclUrl', () => {
   });
 });
 
+// Every data-example reference in the tutorial must point to a valid example in examples.json
+describe('tutorial data-example references', () => {
+  const tutorialHtml = readFileSync(new URL('./tutorial.html', import.meta.url), 'utf-8');
+  const refs = [...tutorialHtml.matchAll(/data-example="([^"]+)"/g)].map(m => m[1]);
+
+  test('found data-example references in tutorial', () => {
+    expect(refs.length).toBeGreaterThan(0);
+  });
+
+  for (const name of refs) {
+    test(`example "${name}" exists and returns >0 results`, () => {
+      expect(examples[name]).toBeDefined();
+      const ast = parseVCL(examples[name].expr);
+      const results = evaluate(ast);
+      expect(results.size).toBeGreaterThan(0);
+    });
+  }
+});
+
 describe('parse-only tests (no data dependency)', () => {
   const parseOnly = [
     '(http://www.nlm.nih.gov/research/umls/rxnorm)161',
