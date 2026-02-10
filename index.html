@@ -465,78 +465,91 @@ h2 .anchor-link:hover, h3 .anchor-link:hover { color: var(--accent); }
 <tr>
     <th>FHIR&nbsp;Operator</th>
     <th>VCL</th>
-    <th>Form</th>
+    <th>General Form</th>
+    <th>Examples</th>
     <th>Semantics</th>
   </tr>
   <tr>
     <td><code>=</code></td><td><code>=</code></td>
-    <td><code>prop = value</code></td>
-    <td>Property value equals the specified code/string.</td>
+    <td><code>propertyPath = scalar</code></td>
+    <td><code data-vcl-expr-key="filter-ingredient"></code></td>
+    <td>Property value equals the specified scalar.</td>
   </tr>
   <tr>
     <td><code>is-a</code></td><td><code>&lt;&lt;</code></td>
-    <td><code>prop &lt;&lt; code</code></td>
+    <td><code>propertyPath &lt;&lt; codeLiteral</code></td>
+    <td><code data-vcl-expr-key="is-a"></code></td>
     <td>Property value is the specified code or any of its descendants (subsumption).</td>
   </tr>
   <tr>
     <td><code>descendent-of</code></td><td><code>&lt;</code></td>
-    <td><code>prop &lt; code</code></td>
+    <td><code>propertyPath &lt; codeLiteral</code></td>
+    <td><code data-vcl-expr-key="descendent-of"></code></td>
     <td>Property value is a strict descendant of the specified code (not including the code itself).</td>
   </tr>
   <tr>
     <td><code>is-not-a</code></td><td><code>~&lt;&lt;</code></td>
-    <td><code>prop ~&lt;&lt; code</code></td>
+    <td><code>propertyPath ~&lt;&lt; codeLiteral</code></td>
+    <td><code data-vcl-expr-key="is-not-a"></code></td>
     <td>Property value is NOT the specified code and NOT any of its descendants.</td>
   </tr>
   <tr>
     <td><code>generalizes</code></td><td><code>&gt;&gt;</code></td>
-    <td><code>prop &gt;&gt; code</code></td>
+    <td><code>propertyPath &gt;&gt; codeLiteral</code></td>
+    <td><code data-vcl-expr-key="generalizes"></code></td>
     <td>Property value is the specified code or any of its ancestors.</td>
   </tr>
   <tr>
     <td><code>child-of</code></td><td><code>&lt;!</code></td>
-    <td><code>prop &lt;! code</code></td>
+    <td><code>propertyPath &lt;! codeLiteral</code></td>
+    <td><code data-vcl-expr-key="child-of"></code></td>
     <td>Property value is a direct child of the specified code.</td>
   </tr>
   <tr>
     <td><code>descendent-leaf</code></td><td><code>!!&lt;</code></td>
-    <td><code>prop !!&lt; code</code></td>
+    <td><code>propertyPath !!&lt; codeLiteral</code></td>
+    <td><code data-vcl-expr-key="descendent-leaf"></code></td>
     <td>Property value is a leaf descendant of the specified code (has no children).</td>
   </tr>
   <tr>
     <td><code>in</code></td><td><code>^</code></td>
-    <td><code>prop ^ (values)</code></td>
+    <td><code>propertyPath ^ setExpr</code></td>
+    <td><code data-vcl-expr-key="in-code-list"></code> &middot; <code data-vcl-expr-key="in-filter-list"></code></td>
     <td>Property value is a member of the specified set (code set expression, nested expression, or ValueSet).
       See <a href="#expr-in">"in" operator</a>.</td>
   </tr>
   <tr>
     <td><code>not-in</code></td><td><code>~^</code></td>
-    <td><code>prop ~^ (values)</code></td>
+    <td><code>propertyPath ~^ setExpr</code></td>
+    <td><code data-vcl-expr-key="not-in"></code></td>
     <td>Property value is NOT a member of the specified set.</td>
   </tr>
   <tr>
     <td><code>regex</code></td><td><code>/</code></td>
-    <td><code>prop / "pattern"</code></td>
+    <td><code>propertyPath / "pattern"</code></td>
+    <td><code data-vcl-expr-key="regex-strength"></code> &middot; <code data-vcl-expr-key="regex-designation"></code></td>
     <td>Property value matches the specified regular expression. The pattern <strong>MUST</strong>
-      be a quoted string. In this prototype, <code>code</code> and <code>display</code> are built-in concept
-      fields and may be used as <code>prop</code> (for example <code>code/"204"</code>). Extracted
-      <code>designation</code> literals from term strings are also queryable (for example <code>designation/"[Ii]buprofen"</code>).</td>
+      be a quoted string.</td>
   </tr>
   <tr>
     <td><code>exists</code></td><td><code>?</code></td>
-    <td><code>prop ? bool:true</code></td>
+    <td><code>propertyPath ? boolLiteral</code></td>
+    <td><code data-vcl-expr-key="exists-tradename"></code></td>
     <td>Tests whether the property has any value. <code>?bool:true</code> matches concepts
       that have the property; <code>?bool:false</code> matches concepts that lack it.</td>
   </tr>
   <tr>
     <td><code>of</code></td><td><code>.</code></td>
-    <td><code>value . prop</code></td>
+    <td><code>navigationSource . code</code></td>
+    <td><code data-vcl-expr-key="of-tradename"></code> &middot; <code data-vcl-expr-key="of-filter-list"></code></td>
     <td>Property navigation. Reverses the property/value roles: starts from the value side
       and follows the property. See <a href="#expr-of">"of" operator</a>.</td>
 </tr>
 </table>
+<p><strong>Operand categories:</strong> <code>propertyPath := code(.code)*</code>; <code>codeLiteral := code | 'code'</code>; <code>boolLiteral := bool:true | bool:false</code>; <code>scalar := codeLiteral | "string" | num:... | bool:... | date:...</code>; <code>setExpr := URI | (expr)</code>; <code>navigationSource := codeLiteral | setExpr | *</code>.</p>
 <p><strong>Hierarchy note:</strong> <code>&lt;&lt;</code>, <code>&lt;</code>, <code>&gt;&gt;</code>, <code>&lt;!</code>, and <code>!!&lt;</code> operate over the named property. Use <code>concept</code> for code hierarchy (for example <code>concept&lt;&lt;369097</code>). In this RxNorm prototype, <code>concept</code> hierarchy is backed by <code>isa</code> edges.</p>
-<p><strong>Regex note:</strong> <code>code/"..."</code> matches concept identifiers and <code>display/"..."</code> matches concept display text. <code>designation/"..."</code> matches extracted alternate labels from term strings. Other property names apply regex to that property's values.</p>
+<p><strong>Hierarchy rhs rule:</strong> for <code>&lt;&lt;</code>, <code>&lt;</code>, <code>~&lt;&lt;</code>, <code>&gt;&gt;</code>, <code>&lt;!</code>, and <code>!!&lt;</code>, the right-hand side is a single <code>codeLiteral</code> (not a <code>setExpr</code>).</p>
+<p><strong>Regex note:</strong> <code>code/"..."</code> matches concept identifiers and <code>display/"..."</code> matches concept display text. <code>designation/"..."</code> matches alternate labels from term strings. Other property names apply regex to that property's values.</p>
 <p><strong>Property lhs rule:</strong> filter operators bind to a property path only: <code>code(.code)*</code>. Grouped expressions are set expressions and cannot appear on the left of filter operators (for example <code>(A;B)&lt;&lt;201</code> is invalid).</p>
 <p><strong>Star hierarchy shorthand:</strong> <code>*&lt;&lt;X</code> is shorthand for <code>concept&lt;&lt;X</code> (similarly for <code>&lt;</code>, <code>&gt;&gt;</code>, <code>&lt;!</code>, <code>!!&lt;</code>, <code>~&lt;&lt;</code>).</p>
 

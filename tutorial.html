@@ -457,9 +457,9 @@ nav a:hover { color: var(--accent); }
   <p><code>code</code> and <code>display</code> are built-in concept fields in this prototype, so regex can target them directly:</p>
   <pre><code data-vcl-expr-key="regex-code-fragment"></code></pre>
   <p><em>Concepts whose code contains "204" (for example <code>104906</code>).</em></p>
-  <p>Alternate labels are available via extracted <code>designation</code> literals from RxNorm term strings (including synonyms and TallMan variants):</p>
+  <p>Alternate labels are available via the <code>designation</code> property from RxNorm term strings (including synonyms and TallMan variants):</p>
   <pre><code data-vcl-expr-key="regex-designation"></code></pre>
-  <p><em>Concepts with any captured designation matching ibuprofen.</em></p>
+  <p><em>Concepts with any designation label matching ibuprofen.</em></p>
   <p><code>?</code> tests whether a property has any value at all:</p>
   <pre><code data-vcl-expr-key="exists-tradename"></code></pre>
   <p><em>Concepts that have at least one tradename (i.e., generic drugs with branded versions).</em></p>
@@ -542,7 +542,7 @@ nav a:hover { color: var(--accent); }
 <div class="step">
   <h3>Example 5: What brand names exist for ibuprofen products?</h3>
   <p><strong>Question:</strong> "List all the brand names (BN) associated with any ibuprofen product."</p>
-  <p><strong>Approach:</strong> Chain navigation: start at ibuprofen, go to SCDCs, then to SCDs, then to SBDs, then extract brand names:</p>
+  <p><strong>Approach:</strong> Chain navigation: start at ibuprofen, go to SCDCs, then to SCDs, then to SBDs, then select brand-name concepts:</p>
   <pre><code data-vcl-expr-key="deep-of-chain"></code></pre>
   <p>Or more simply &mdash; since BN concepts have <code>tradename_of</code> pointing to IN:</p>
   <pre><code data-vcl-expr-key="bn-ibuprofen"></code></pre>
@@ -555,23 +555,25 @@ nav a:hover { color: var(--accent); }
 <!-- ============================== OPERATORS ============================== -->
 <section id="operators">
 <h2>Operator Reference</h2>
+<p><strong>Operand categories:</strong> <code>propertyPath := code(.code)*</code>; <code>codeLiteral := code | 'code'</code>; <code>boolLiteral := bool:true | bool:false</code>; <code>scalar := codeLiteral | "string" | num:... | bool:... | date:...</code>; <code>setExpr := URI | (expr)</code>; <code>navigationSource := codeLiteral | setExpr | *</code>.</p>
 <table>
-  <tr><th>FHIR Op</th><th>VCL</th><th>Pattern</th><th>Example</th><th>Meaning</th></tr>
-  <tr><td>=</td><td><code>=</code></td><td><code>prop=val</code></td><td><code class="vcl-try" data-example="filter-ingredient"></code></td><td>Property equals value</td></tr>
-  <tr><td>in</td><td><code>^</code></td><td><code>prop^(...)</code></td><td><code class="vcl-try" data-example="in-code-list"></code></td><td>Property value in set</td></tr>
-  <tr><td>not-in</td><td><code>~^</code></td><td><code>prop~^(...)</code></td><td><code class="vcl-try" data-example="not-in"></code></td><td>Property value not in set</td></tr>
-  <tr><td>exists</td><td><code>?</code></td><td><code>prop?bool:true</code></td><td><code class="vcl-try" data-example="exists-tradename"></code></td><td>Property has any value</td></tr>
-  <tr><td>regex</td><td><code>/</code></td><td><code>prop/"pat"</code></td><td><code class="vcl-try" data-example="regex-strength"></code></td><td>Property matches regex</td></tr>
-  <tr><td>is-a</td><td><code>&lt;&lt;</code></td><td><code>prop&lt;&lt;code</code></td><td><code class="vcl-try" data-example="is-a"></code></td><td>Descendant or self</td></tr>
-  <tr><td>descendent-of</td><td><code>&lt;</code></td><td><code>prop&lt;code</code></td><td><code class="vcl-try" data-example="descendent-of"></code></td><td>Strict descendant</td></tr>
-  <tr><td>child-of</td><td><code>&lt;!</code></td><td><code>prop&lt;!code</code></td><td><code class="vcl-try" data-example="child-of"></code></td><td>Direct child only</td></tr>
-  <tr><td>is-not-a</td><td><code>~&lt;&lt;</code></td><td><code>prop~&lt;&lt;code</code></td><td><code class="vcl-try" data-example="is-not-a"></code></td><td>NOT descendant or self</td></tr>
-  <tr><td>generalizes</td><td><code>&gt;&gt;</code></td><td><code>prop&gt;&gt;code</code></td><td><code class="vcl-try" data-example="generalizes"></code></td><td>Ancestor or self</td></tr>
-<tr><td>descendent-leaf</td><td><code>!!&lt;</code></td><td><code>prop!!&lt;code</code></td><td><code class="vcl-try" data-example="descendent-leaf"></code></td><td>Leaf descendants</td></tr>
-<tr><td>of</td><td><code>.</code></td><td><code>val.prop</code></td><td><code class="vcl-try" data-example="of-tradename"></code></td><td>Navigate property from value</td></tr>
+  <tr><th>FHIR Op</th><th>VCL</th><th>General Form</th><th>Examples</th><th>Meaning</th></tr>
+  <tr><td>=</td><td><code>=</code></td><td><code>propertyPath = scalar</code></td><td><code class="vcl-try" data-example="filter-ingredient"></code></td><td>Property equals scalar value</td></tr>
+  <tr><td>in</td><td><code>^</code></td><td><code>propertyPath ^ setExpr</code></td><td><code class="vcl-try" data-example="in-code-list"></code> &middot; <code class="vcl-try" data-example="in-filter-list"></code></td><td>Property value in set</td></tr>
+  <tr><td>not-in</td><td><code>~^</code></td><td><code>propertyPath ~^ setExpr</code></td><td><code class="vcl-try" data-example="not-in"></code></td><td>Property value not in set</td></tr>
+  <tr><td>exists</td><td><code>?</code></td><td><code>propertyPath ? boolLiteral</code></td><td><code class="vcl-try" data-example="exists-tradename"></code></td><td>Property has any value</td></tr>
+  <tr><td>regex</td><td><code>/</code></td><td><code>propertyPath / "pattern"</code></td><td><code class="vcl-try" data-example="regex-strength"></code> &middot; <code class="vcl-try" data-example="regex-designation"></code></td><td>Property matches regex</td></tr>
+  <tr><td>is-a</td><td><code>&lt;&lt;</code></td><td><code>propertyPath &lt;&lt; codeLiteral</code></td><td><code class="vcl-try" data-example="is-a"></code></td><td>Descendant or self</td></tr>
+  <tr><td>descendent-of</td><td><code>&lt;</code></td><td><code>propertyPath &lt; codeLiteral</code></td><td><code class="vcl-try" data-example="descendent-of"></code></td><td>Strict descendant</td></tr>
+  <tr><td>child-of</td><td><code>&lt;!</code></td><td><code>propertyPath &lt;! codeLiteral</code></td><td><code class="vcl-try" data-example="child-of"></code></td><td>Direct child only</td></tr>
+  <tr><td>is-not-a</td><td><code>~&lt;&lt;</code></td><td><code>propertyPath ~&lt;&lt; codeLiteral</code></td><td><code class="vcl-try" data-example="is-not-a"></code></td><td>NOT descendant or self</td></tr>
+  <tr><td>generalizes</td><td><code>&gt;&gt;</code></td><td><code>propertyPath &gt;&gt; codeLiteral</code></td><td><code class="vcl-try" data-example="generalizes"></code></td><td>Ancestor or self</td></tr>
+  <tr><td>descendent-leaf</td><td><code>!!&lt;</code></td><td><code>propertyPath !!&lt; codeLiteral</code></td><td><code class="vcl-try" data-example="descendent-leaf"></code></td><td>Leaf descendants</td></tr>
+  <tr><td>of</td><td><code>.</code></td><td><code>navigationSource . code</code></td><td><code class="vcl-try" data-example="of-tradename"></code> &middot; <code class="vcl-try" data-example="of-filter-list"></code></td><td>Navigate property from value/set</td></tr>
 </table>
 <p><strong>Hierarchy note:</strong> <code>&lt;&lt;</code>, <code>&lt;</code>, <code>&gt;&gt;</code>, <code>&lt;!</code>, and <code>!!&lt;</code> operate over the named property. Use <code>concept</code> for code hierarchy (for example <code>concept&lt;&lt;369097</code>). In this RxNorm prototype, <code>concept</code> hierarchy is backed by <code>isa</code> edges.</p>
-<p><strong>Regex note:</strong> for this prototype, <code>code</code> and <code>display</code> are built-in concept fields available on the regex lhs (for example <code>code/"204"</code> and <code>display/"minophen"</code>). The extracted literal property <code>designation</code> supports matching alternate labels from term strings (for example <code>designation/"[Ii]buprofen"</code>).</p>
+<p><strong>Hierarchy rhs rule:</strong> for <code>&lt;&lt;</code>, <code>&lt;</code>, <code>~&lt;&lt;</code>, <code>&gt;&gt;</code>, <code>&lt;!</code>, and <code>!!&lt;</code>, the right-hand side is a single <code>codeLiteral</code> (not a <code>setExpr</code>).</p>
+<p><strong>Regex note:</strong> for this prototype, <code>code</code> and <code>display</code> are built-in concept fields available on the regex lhs (for example <code>code/"204"</code> and <code>display/"minophen"</code>). <code>designation</code> supports matching alternate labels from term strings (for example <code>designation/"[Ii]buprofen"</code>).</p>
 <p><strong>Property lhs rule:</strong> filter operators bind to a property path only: <code>code(.code)*</code>. Grouped expressions are set expressions and cannot appear on the left of filter operators (for example <code>(A;B)&lt;&lt;201</code> is invalid).</p>
 <p><strong>Star hierarchy shorthand:</strong> <code>*&lt;&lt;X</code> is shorthand for <code>concept&lt;&lt;X</code> (and similarly for <code>&lt;</code>, <code>&gt;&gt;</code>, <code>&lt;!</code>, <code>!!&lt;</code>, <code>~&lt;&lt;</code>).</p>
 <p>Set operators: <code>,</code> (AND/intersection), <code>;</code> (OR/union), <code>-</code> (exclusion/minus).</p>

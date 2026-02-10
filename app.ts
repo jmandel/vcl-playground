@@ -164,7 +164,13 @@ function conceptJson(code: string): string {
   const c = DB.byCode.get(code);
   if (!c) return '';
   const concept: any = { code: c.code, display: c.display };
-  concept.designation = [];
+  const literals = DB.literalsByCode.get(code) || [];
+  const designationValues = [...new Set(
+    literals
+      .filter((l: any) => l.property === 'designation' && l.value)
+      .map((l: any) => l.value)
+  )].sort((a: string, b: string) => a.localeCompare(b));
+  concept.designation = designationValues.map((value: string) => ({ value }));
   const property: any[] = [];
   if (c.tty) property.push({ code: 'tty', valueString: c.tty });
   if (c.active !== undefined) property.push({ code: 'status', valueString: c.active ? 'active' : 'inactive' });
