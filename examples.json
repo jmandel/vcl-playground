@@ -99,6 +99,10 @@
     "label": "code/\"204\"",
     "expr": "code/\"204\""
   },
+  "regex-designation": {
+    "label": "designation/\"[Ii]buprofen\"",
+    "expr": "designation/\"[Ii]buprofen\""
+  },
   "code-list": {
     "label": "(161;5640)",
     "expr": "(161;5640)"

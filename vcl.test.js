@@ -403,6 +403,19 @@ describe('regex built-in concept fields', () => {
     const result = evaluate(parseVCL('display/"acetaminophen"'));
     expect(result.size).toBeGreaterThan(0);
   });
+
+  test('designation regex applies to extracted designation literals', () => {
+    const result = evaluate(parseVCL('designation/"[Ii]buprofen"'));
+    expect(result.size).toBeGreaterThan(0);
+  });
+
+  test('designation equality can match exact designation text', () => {
+    const sample = data.literals.find((l) => l.property === 'designation');
+    expect(sample).toBeDefined();
+    const expr = `designation=${JSON.stringify(sample.value)}`;
+    const result = evaluate(parseVCL(expr));
+    expect(result.has(sample.code)).toBeTrue();
+  });
 });
 
 describe('concept hierarchy alias semantics', () => {

@@ -618,6 +618,7 @@ function createEvaluator(DB, options) {
       try { re = new RegExp(value); } catch(e) { return results; }
       for (const code of DB.allCodes) {
         // Built-in concept fields: code/display are matched directly on the concept record.
+        // Designations are handled below as regular literal properties.
         if (property === 'code' || property === 'display') {
           const c = DB.byCode.get(code);
           const testVal = property === 'code' ? c.code : c.display;
