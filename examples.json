@@ -51,6 +51,14 @@
     "label": "consists_of.has_ingredient=161",
     "expr": "consists_of.has_ingredient=161"
   },
+  "multihop-in-nested": {
+    "label": "tradename_of^(ingredient_of^(TTY=SCDC))",
+    "expr": "tradename_of^(ingredient_of^(TTY=SCDC))"
+  },
+  "multihop-in-dotted": {
+    "label": "tradename_of.ingredient_of.TTY=SCDC",
+    "expr": "tradename_of.ingredient_of.TTY=SCDC"
+  },
   "regex-strength": {
     "label": "RXN_STRENGTH/\".*500.*\"",
     "expr": "RXN_STRENGTH/\".*500.*\""

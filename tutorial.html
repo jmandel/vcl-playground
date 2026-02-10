@@ -384,34 +384,22 @@ nav a:hover { color: var(--accent); }
 
 <div class="step">
   <h3>Step 5: Nesting with <code>^</code> and <code>(...)</code></h3>
-  <p>The <code>^</code> (<code>in</code>) operator with a nested expression <code>(...)</code> enables graph traversal through
-  intermediate nodes:</p>
-  <pre><code data-vcl-expr-key="in-filter-list"></code></pre>
-  <p>Read this as: <em>"concepts whose <code>consists_of</code> property points to something that matches
-  <code>has_ingredient=161</code>"</em>. In other words: SCDs that consist of a component containing acetaminophen.</p>
-  <p>Rewrite rule: <code>a.b=x</code> is equivalent to <code>a^(b=x)</code>.</p>
+  <p>These two forms are equivalent:</p>
   <div class="side-by-side">
     <div>
-      <h4>Nested Membership</h4>
-      <pre><code data-vcl-expr-key="in-filter-list"></code></pre>
+      <h4>Nested <code>in</code> Form</h4>
+      <pre><code data-vcl-expr-key="multihop-in-nested"></code></pre>
     </div>
     <div>
-      <h4>Dotted Path</h4>
-      <pre><code data-vcl-expr-key="in-filter-list-dotted"></code></pre>
+      <h4>Dotted Path Form</h4>
+      <pre><code data-vcl-expr-key="multihop-in-dotted"></code></pre>
     </div>
   </div>
-  <p>Nesting can go deeper:</p>
-  <pre><code data-vcl-expr-key="nesting-deep"></code></pre>
-  <p><em>SCDs containing acetaminophen in Oral Tablet form.</em></p>
-  <p>To OR across different property paths, use explicit disjunction such as
-  <code>consists_of.has_ingredient=1191;has_ingredient=1191</code>.</p>
-  <p>For hierarchy operators, <code>*</code> is shorthand for <code>concept</code>:</p>
-  <pre><code data-vcl-expr-key="star-concept-hierarchy"></code></pre>
+  <p>General rewrite rule: <code>a.b OP x</code> is equivalent to <code>a^(b OP x)</code>; multi-hop extends this recursively,
+  so <code>a.b.c OP x</code> is equivalent to <code>a^(b^(c OP x))</code>.</p>
   <div class="try-it">
-    <button class="try-btn" onclick="tryExample('in-filter-list')">Try: nested membership</button>
-    <button class="try-btn" onclick="tryExample('in-filter-list-dotted')">Try: dotted rewrite</button>
-    <button class="try-btn" onclick="tryExample('nesting-deep')">Try: + Oral Tablet</button>
-    <button class="try-btn" onclick="tryExample('star-concept-hierarchy')">Try: * hierarchy shorthand</button>
+    <button class="try-btn" onclick="tryExample('multihop-in-nested')">Try: multi-hop nested</button>
+    <button class="try-btn" onclick="tryExample('multihop-in-dotted')">Try: multi-hop dotted</button>
   </div>
 </div>
 

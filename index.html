@@ -382,45 +382,23 @@ h2 .anchor-link:hover, h3 .anchor-link:hover { color: var(--accent); }
   intermediate nodes</strong>: the property must point to a concept that itself matches
   the nested expression.
 </p>
-<pre><code data-vcl-expr-key="in-filter-list-spaced"></code></pre>
-<p>
-  Concepts whose <code>consists_of</code> property points to a concept that has
-  <code>has_ingredient = 161</code>. In RxNorm: SCDs that consist of a component
-  containing acetaminophen.
-  <a class="try-link" href="tutorial.html#example=in-filter-list">Try it</a>
-</p>
-<p>
-  Nested expressions can nest further:
-</p>
-<pre><code data-vcl-expr-key="in-nested-tradename-spaced"></code></pre>
-<p>
-  SCDs consisting of a component whose ingredient has a specific trade name.
-</p>
-<p>
-  Rewrite equivalence: <code>a.b OP x</code> is syntactic sugar for <code>a^(b OP x)</code>.
-</p>
-<p>
-  To OR across different property paths, use explicit disjunction:
-  <code>consists_of.has_ingredient=1191;has_ingredient=1191</code>.
-</p>
-<p>
-  For hierarchy operators, <code>*</code> is shorthand for <code>concept</code>:
-</p>
-<pre><code data-vcl-expr-key="star-concept-hierarchy"></code></pre>
+<p>Example (multi-hop):</p>
 <div class="side-by-side">
   <div>
-    <h4>Nested Membership</h4>
-    <pre><code data-vcl-expr-key="walkthrough-ibuprofen-tablets"></code></pre>
+    <h4>Nested <code>in</code> Form</h4>
+    <pre><code data-vcl-expr-key="multihop-in-nested"></code></pre>
   </div>
   <div>
-    <h4>Dotted Path Rewrite</h4>
-    <pre><code data-vcl-expr-key="walkthrough-ibuprofen-tablets-dotted"></code></pre>
+    <h4>Dotted Path Form</h4>
+    <pre><code data-vcl-expr-key="multihop-in-dotted"></code></pre>
   </div>
 </div>
 <p>
-  Both forms mean: SCD concepts for ibuprofen oral tablets.
-  <a class="try-link" href="tutorial.html#example=walkthrough-ibuprofen-tablets-dotted">Try dotted form</a>
+  Both forms are equivalent and return the same set.
+  Rewrite rule: <code>a.b OP x</code> is equivalent to <code>a^(b OP x)</code>; multi-hop extends recursively, so
+  <code>a.b.c OP x</code> is equivalent to <code>a^(b^(c OP x))</code>.
 </p>
+<p>Use this rewrite whenever you want to express the same traversal in either nested-<code>in</code> form or dotted-path form.</p>
 
 <h4>A ValueSet URI</h4>
 <pre><code data-vcl-expr-key="in-vs-uri-controlled-substances"></code></pre>
