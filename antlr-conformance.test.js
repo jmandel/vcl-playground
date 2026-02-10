@@ -19,7 +19,12 @@ const validQueries = [
     '(TTY=SCD,consists_of.has_ingredient=5640);(TTY=SBD,has_ingredient=5640)',
     '*.consists_of.has_ingredient',
     '(204574).consists_of.has_ingredient',
-    '*<<369097'
+    '*<<369097',
+    "TTY='SCD'",
+    'TTY="SCD"',
+    'rank=num:42',
+    'effective_date=date:2026-02-09',
+    'has_tradename?bool:true'
   ])
 ];
 
@@ -34,7 +39,10 @@ const invalidQueries = [
   '(204574).consists_of.has_ingredient=1191,consists_of.has_ingredient=1886',
   '104906..has_tradename',
   'consists_of^(has_ingredient=161',
-  '(a;b)<<201'
+  '(a;b)<<201',
+  'has_tradename?true',
+  'has_tradename?false',
+  'rank=num:'
 ];
 
 describe('ANTLR conformance with hand parser', () => {

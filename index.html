@@ -143,7 +143,7 @@ h2 .anchor-link:hover, h3 .anchor-link:hover { color: var(--accent); }
   when embedding in URL parameters and JSON string values.
 </p>
 
-<h3>Codes and Quoting</h3>
+<h3>Codes and Literals</h3>
 <p>
   A <strong>code</strong> in VCL is either:
 </p>
@@ -151,13 +151,22 @@ h2 .anchor-link:hover, h3 .anchor-link:hover { color: var(--accent); }
   <li>An <strong>unquoted simple code</strong> (<code>SCODE</code>): starts with an alphanumeric character,
     followed by zero or more alphanumeric characters, hyphens, or underscores.
     Examples: <code>161</code>, <code>SCD</code>, <code>LP15653-6</code></li>
-  <li>A <strong>quoted value</strong>: enclosed in double quotes (<code>"</code>) with backslash (<code>\</code>)
-    as the escape character. Only <code>"</code> and <code>\</code> may be escaped.
-    Examples: <code>"J45.0"</code>, <code>"_ActNoImmunizationReason"</code></li>
+  <li>An <strong>explicit quoted code</strong>: enclosed in single quotes (<code>'</code>) with backslash
+    (<code>\</code>) escapes. Example: <code>'J45.0'</code></li>
 </ul>
 <p>
-  Codes containing characters other than <code>[a-zA-Z0-9_-]</code> <strong>MUST</strong> be quoted.
+  Codes containing characters other than <code>[a-zA-Z0-9_-]</code> <strong>MUST</strong> be single-quoted.
 </p>
+<p>
+  Non-code scalar literals use explicit syntax:
+  strings <code>"text"</code>, numbers <code>num:42</code>, booleans <code>bool:true</code>/<code>bool:false</code>,
+  and dates <code>date:YYYY-MM-DD</code>.
+</p>
+<pre><code data-vcl-expr-key="typed-code-explicit"></code></pre>
+<pre><code data-vcl-expr-key="typed-string-explicit"></code></pre>
+<pre><code data-vcl-expr-key="typed-number-explicit"></code></pre>
+<pre><code data-vcl-expr-key="typed-boolean-explicit"></code></pre>
+<pre><code data-vcl-expr-key="typed-date-explicit"></code></pre>
 
 <h3>URIs</h3>
 <p>
@@ -304,7 +313,8 @@ h2 .anchor-link:hover, h3 .anchor-link:hover { color: var(--accent); }
 </p>
 <pre><code data-vcl-expr-key="filter-tty"></code></pre>
 <p>
-  Selects all concepts whose <code>TTY</code> (term type) literal property equals <code>SCD</code>.
+  Selects all concepts whose <code>TTY</code> (term type) literal property equals code <code>SCD</code>.
+  A string comparison uses double quotes (for example <code>TTY="SCD"</code>).
   <a class="try-link" href="tutorial.html#example=filter-tty">Try it</a>
 </p>
 <p>
@@ -512,9 +522,9 @@ h2 .anchor-link:hover, h3 .anchor-link:hover { color: var(--accent); }
   </tr>
   <tr>
     <td><code>exists</code></td><td><code>?</code></td>
-    <td><code>prop ? true</code></td>
-    <td>Tests whether the property has any value. <code>?true</code> matches concepts
-      that have the property; <code>?false</code> matches concepts that lack it.</td>
+    <td><code>prop ? bool:true</code></td>
+    <td>Tests whether the property has any value. <code>?bool:true</code> matches concepts
+      that have the property; <code>?bool:false</code> matches concepts that lack it.</td>
   </tr>
   <tr>
     <td><code>of</code></td><td><code>.</code></td>

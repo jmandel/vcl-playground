@@ -93,7 +93,7 @@ describe('compose output correctness', () => {
   });
 
   test('conjunction preserves grouped source via valueSet dependency', () => {
-    const ast = parseVCL('(204574;204574;204574),has_tradename?true');
+    const ast = parseVCL('(204574;204574;204574),has_tradename?bool:true');
     const { valueSets } = astToComposeCollection(ast, system);
 
     const top = valueSets[0].compose.include[0];
@@ -114,7 +114,7 @@ describe('compose output correctness', () => {
   });
 
   test('conjunction with code + filter does not drop code term', () => {
-    const ast = parseVCL('204574,has_tradename?true');
+    const ast = parseVCL('204574,has_tradename?bool:true');
     const { valueSets } = astToComposeCollection(ast, system);
 
     const top = valueSets[0].compose.include[0];
@@ -277,6 +277,50 @@ describe('parse-only tests (no data dependency)', () => {
       expect(ast).toBeDefined();
     });
   }
+});
+
+describe('typed literal syntax', () => {
+  test('code literals can be explicit with single quotes', () => {
+    const ast = parseVCL("TTY='SCD'");
+    expect(ast.type).toBe('filter');
+    expect(ast.op).toBe('=');
+    expect(ast.value).toEqual({ type: 'literal', kind: 'code', value: 'SCD' });
+  });
+
+  test('double quotes are string literals', () => {
+    const ast = parseVCL('TTY="SCD"');
+    expect(ast.type).toBe('filter');
+    expect(ast.op).toBe('=');
+    expect(ast.value).toEqual({ type: 'literal', kind: 'string', value: 'SCD' });
+  });
+
+  test('number/date/boolean typed literals parse', () => {
+    expect(parseVCL('rank=num:42').value).toEqual({ type: 'literal', kind: 'number', value: 42 });
+    expect(parseVCL('effective_date=date:2026-02-09').value).toEqual({ type: 'literal', kind: 'date', value: '2026-02-09' });
+    expect(parseVCL('has_tradename?bool:true').value).toEqual({ type: 'literal', kind: 'boolean', value: true });
+  });
+
+  test('exists requires explicit boolean literal', () => {
+    expect(() => parseVCL('has_tradename?true')).toThrow();
+    expect(() => parseVCL('has_tradename?false')).toThrow();
+  });
+
+  test('typed literals serialize and map to compose filter strings', () => {
+    const boolAst = parseVCL('has_tradename?bool:true');
+    expect(astToVclText(boolAst)).toBe('has_tradename?bool:true');
+    const boolCompose = astToCompose(boolAst, system);
+    expect(boolCompose.include[0].filter[0]).toEqual({ property: 'has_tradename', op: 'exists', value: 'true' });
+
+    const numberAst = parseVCL('rank=num:42');
+    expect(astToVclText(numberAst)).toBe('rank=num:42');
+    const numberCompose = astToCompose(numberAst, system);
+    expect(numberCompose.include[0].filter[0]).toEqual({ property: 'rank', op: '=', value: '42' });
+
+    const dateAst = parseVCL('effective_date=date:2026-02-09');
+    expect(astToVclText(dateAst)).toBe('effective_date=date:2026-02-09');
+    const dateCompose = astToCompose(dateAst, system);
+    expect(dateCompose.include[0].filter[0]).toEqual({ property: 'effective_date', op: '=', value: '2026-02-09' });
+  });
 });
 
 describe('set syntax', () => {

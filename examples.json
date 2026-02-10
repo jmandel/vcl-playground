@@ -56,8 +56,8 @@
     "expr": "RXN_STRENGTH/\".*500.*\""
   },
   "exists-tradename": {
-    "label": "has_tradename?true",
-    "expr": "has_tradename?true"
+    "label": "has_tradename?bool:true",
+    "expr": "has_tradename?bool:true"
   },
   "star": {
     "label": "*",

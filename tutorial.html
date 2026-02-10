@@ -328,7 +328,7 @@ nav a:hover { color: var(--accent); }
   <p>The simplest VCL expression is a code literal. It selects exactly one concept.</p>
   <pre><code data-vcl-expr-key="code-161"></code></pre>
   <p>This matches the single concept with code <code>161</code> &mdash; acetaminophen. If a code contains
-  special characters, quote it: <code>"161"</code> or <code>"J45.0"</code>.</p>
+  special characters, quote it with single quotes: <code>'J45.0'</code>.</p>
   <div class="try-it"><button class="try-btn" onclick="tryExample('code-161')">Try: 161</button>
   <button class="try-btn" onclick="tryExample('code-317541')">Try: 317541</button></div>
 </div>
@@ -339,7 +339,8 @@ nav a:hover { color: var(--accent); }
   <pre><code data-vcl-expr-key="filter-ingredient"></code></pre>
   <p>This means: <em>"all concepts whose <code>has_ingredient</code> property points to code 161 (acetaminophen)"</em>.
   In RxNorm, these are the SCDCs &mdash; drug components like "acetaminophen 500 MG".</p>
-  <p>For literal (string) properties, the value is just a code too:</p>
+  <p>Unquoted values are codes. Use explicit scalar literals when needed:
+  strings <code>"..."</code>, numbers <code>num:42</code>, booleans <code>bool:true</code>, dates <code>date:2026-02-09</code>.</p>
   <pre><code data-vcl-expr-key="filter-tty"></code></pre>
   <p>This matches all Semantic Clinical Drugs in the dataset.</p>
   <div class="try-it">
@@ -459,7 +460,7 @@ nav a:hover { color: var(--accent); }
   <div class="try-it">
     <button class="try-btn" onclick="tryExample('regex-display')">Try: display regex</button>
     <button class="try-btn" onclick="tryExample('regex-strength')">Try: strength regex</button>
-    <button class="try-btn" onclick="tryExample('exists-tradename')">Try: has_tradename?true</button>
+    <button class="try-btn" onclick="tryExample('exists-tradename')">Try: has_tradename?bool:true</button>
   </div>
 </div>
 
@@ -551,7 +552,7 @@ nav a:hover { color: var(--accent); }
   <tr><td>=</td><td><code>=</code></td><td><code>prop=val</code></td><td><code class="vcl-try" data-example="filter-ingredient"></code></td><td>Property equals value</td></tr>
   <tr><td>in</td><td><code>^</code></td><td><code>prop^(...)</code></td><td><code class="vcl-try" data-example="in-code-list"></code></td><td>Property value in set</td></tr>
   <tr><td>not-in</td><td><code>~^</code></td><td><code>prop~^(...)</code></td><td><code class="vcl-try" data-example="not-in"></code></td><td>Property value not in set</td></tr>
-  <tr><td>exists</td><td><code>?</code></td><td><code>prop?true</code></td><td><code class="vcl-try" data-example="exists-tradename"></code></td><td>Property has any value</td></tr>
+  <tr><td>exists</td><td><code>?</code></td><td><code>prop?bool:true</code></td><td><code class="vcl-try" data-example="exists-tradename"></code></td><td>Property has any value</td></tr>
   <tr><td>regex</td><td><code>/</code></td><td><code>prop/"pat"</code></td><td><code class="vcl-try" data-example="regex-strength"></code></td><td>Property matches regex</td></tr>
   <tr><td>is-a</td><td><code>&lt;&lt;</code></td><td><code>prop&lt;&lt;code</code></td><td><code class="vcl-try" data-example="is-a"></code></td><td>Descendant or self</td></tr>
   <tr><td>descendent-of</td><td><code>&lt;</code></td><td><code>prop&lt;code</code></td><td><code class="vcl-try" data-example="descendent-of"></code></td><td>Strict descendant</td></tr>

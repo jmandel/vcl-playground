@@ -7,7 +7,8 @@ const TT = {
   DASH:'-', OPEN:'(', CLOSE:')', SEMI:';', COMMA:',', DOT:'.', STAR:'*',
   EQ:'=', IS_A:'<<', IS_NOT_A:'~<<', DESC_OF:'<', REGEX:'/', IN:'^', NOT_IN:'~^',
   GENERALIZES:'>>', CHILD_OF:'<!', DESC_LEAF:'!!<', EXISTS:'?',
-  URI:'URI', SCODE:'SCODE', QUOTED:'QUOTED', EOF:'EOF'
+  URI:'URI', SCODE:'SCODE', CODE_QUOTED:'CODE_QUOTED', STRING:'STRING',
+  NUMBER:'NUMBER', BOOLEAN:'BOOLEAN', DATE:'DATE', EOF:'EOF'
 };
 
 class ParseError extends Error {
@@ -40,7 +41,19 @@ function tokenize(input) {
       i++; continue;
     }
 
-    // Quoted value
+    // Single-quoted explicit code
+    if (input[i] === '\'') {
+      let j = i + 1, val = '';
+      while (j < input.length && input[j] !== '\'') {
+        if (input[j] === '\\' && j + 1 < input.length) { val += input[j + 1]; j += 2; }
+        else { val += input[j]; j++; }
+      }
+      if (j >= input.length) throw new ParseError('Unterminated code literal', i);
+      tokens.push({type: TT.CODE_QUOTED, value: val, pos: i});
+      i = j + 1; continue;
+    }
+
+    // Double-quoted string
     if (input[i] === '"') {
       let j = i + 1, val = '';
       while (j < input.length && input[j] !== '"') {
@@ -48,8 +61,25 @@ function tokenize(input) {
         else { val += input[j]; j++; }
       }
       if (j >= input.length) throw new ParseError('Unterminated string', i);
-      tokens.push({type: TT.QUOTED, value: val, pos: i});
+      tokens.push({type: TT.STRING, value: val, pos: i});
       i = j + 1; continue;
+    }
+
+    // Typed scalars
+    m = rest.match(/^num:(-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?)/);
+    if (m) {
+      tokens.push({type: TT.NUMBER, value: Number(m[1]), pos: i});
+      i += m[0].length; continue;
+    }
+    m = rest.match(/^bool:(true|false)/);
+    if (m) {
+      tokens.push({type: TT.BOOLEAN, value: m[1] === 'true', pos: i});
+      i += m[0].length; continue;
+    }
+    m = rest.match(/^date:([0-9]{4}-[0-9]{2}-[0-9]{2})/);
+    if (m) {
+      tokens.push({type: TT.DATE, value: m[1], pos: i});
+      i += m[0].length; continue;
     }
 
     // URI
@@ -125,7 +155,7 @@ class Parser {
           this.advance();
           const next = this.peek();
           if (next.type === TT.OPEN || next.type === TT.STAR || next.type === TT.SCODE ||
-              next.type === TT.QUOTED || next.type === TT.IN ||
+              next.type === TT.CODE_QUOTED || next.type === TT.IN ||
               this.isOperator(next.type)) {
             systemUri = uri;
           } else {
@@ -175,7 +205,7 @@ class Parser {
       }
       throw new ParseError('Expected URI after ^', t.pos);
     }
-    if (t.type === TT.SCODE || t.type === TT.QUOTED) {
+    if (t.type === TT.SCODE || t.type === TT.CODE_QUOTED) {
       return this.parseCodeLedExpr(systemUri);
     }
 
@@ -277,16 +307,16 @@ class Parser {
     const op = this.advance();
     const opType = op.type;
 
-    if (opType === TT.EQ) return { op: '=', value: this.parseCode() };
+    if (opType === TT.EQ) return { op: '=', value: this.parseScalarLiteral() };
     if (opType === TT.IS_A) return { op: 'is-a', value: this.parseCode() };
     if (opType === TT.IS_NOT_A) return { op: 'is-not-a', value: this.parseCode() };
     if (opType === TT.DESC_OF) return { op: 'descendent-of', value: this.parseCode() };
     if (opType === TT.GENERALIZES) return { op: 'generalizes', value: this.parseCode() };
     if (opType === TT.CHILD_OF) return { op: 'child-of', value: this.parseCode() };
     if (opType === TT.DESC_LEAF) return { op: 'descendent-leaf', value: this.parseCode() };
-    if (opType === TT.EXISTS) return { op: 'exists', value: this.parseCode() };
+    if (opType === TT.EXISTS) return { op: 'exists', value: this.parseBooleanLiteral() };
 
-    if (opType === TT.REGEX) return { op: 'regex', value: this.expect(TT.QUOTED).value };
+    if (opType === TT.REGEX) return { op: 'regex', value: this.expect(TT.STRING).value };
 
     if (opType === TT.IN || opType === TT.NOT_IN) {
       const inOp = opType === TT.IN ? 'in' : 'not-in';
@@ -308,7 +338,7 @@ class Parser {
 
   parseFilter() {
     const t = this.peek();
-    if (t.type === TT.SCODE || t.type === TT.QUOTED) {
+    if (t.type === TT.SCODE || t.type === TT.CODE_QUOTED) {
       const code = this.parseCode();
       if (this.isOperator(this.peek().type)) {
         return this.parseFilterRest(code, null);
@@ -326,8 +356,36 @@ class Parser {
   parseCode() {
     const t = this.peek();
     if (t.type === TT.SCODE) return this.advance().value;
-    if (t.type === TT.QUOTED) return this.advance().value;
+    if (t.type === TT.CODE_QUOTED) return this.advance().value;
     throw new ParseError(`Expected code, got ${t.type} '${t.value}'`, t.pos);
+  }
+
+  parseScalarLiteral() {
+    const t = this.peek();
+    if (t.type === TT.SCODE || t.type === TT.CODE_QUOTED) {
+      return { type: 'literal', kind: 'code', value: this.parseCode() };
+    }
+    if (t.type === TT.STRING) return this.parseStringLiteral();
+    if (t.type === TT.NUMBER) return this.parseNumberLiteral();
+    if (t.type === TT.BOOLEAN) return this.parseBooleanLiteral();
+    if (t.type === TT.DATE) return this.parseDateLiteral();
+    throw new ParseError(`Expected scalar literal, got ${t.type} '${t.value}'`, t.pos);
+  }
+
+  parseStringLiteral() {
+    return { type: 'literal', kind: 'string', value: this.expect(TT.STRING).value };
+  }
+
+  parseNumberLiteral() {
+    return { type: 'literal', kind: 'number', value: this.expect(TT.NUMBER).value };
+  }
+
+  parseBooleanLiteral() {
+    return { type: 'literal', kind: 'boolean', value: this.expect(TT.BOOLEAN).value };
+  }
+
+  parseDateLiteral() {
+    return { type: 'literal', kind: 'date', value: this.expect(TT.DATE).value };
   }
 }
 
@@ -495,29 +553,54 @@ function createEvaluator(DB, options) {
     }
   }
 
+  function toLiteral(value) {
+    if (value && typeof value === 'object' && value.type === 'literal') return value;
+    if (typeof value === 'string') return { type: 'literal', kind: 'code', value };
+    if (typeof value === 'number') return { type: 'literal', kind: 'number', value };
+    if (typeof value === 'boolean') return { type: 'literal', kind: 'boolean', value };
+    return null;
+  }
+
+  function literalMatches(candidate, literal) {
+    if (!literal) return false;
+    if (literal.kind === 'number') {
+      const n = typeof candidate === 'number' ? candidate : Number(candidate);
+      return Number.isFinite(n) && n === literal.value;
+    }
+    if (literal.kind === 'boolean') {
+      if (typeof candidate === 'boolean') return candidate === literal.value;
+      if (typeof candidate === 'string') {
+        if (candidate === 'true') return literal.value === true;
+        if (candidate === 'false') return literal.value === false;
+      }
+      return false;
+    }
+    return String(candidate) === String(literal.value);
+  }
+
   function evalFilter(ast) {
     const {property, op, value} = ast;
     const results = new Set();
 
     if (op === '=') {
-      const targetValue = typeof value === 'object' ? value.value : value;
+      const target = toLiteral(value);
       for (const code of DB.allCodes) {
         const edges = DB.edgesBySource.get(code) || [];
         for (const e of edges) {
-          if (e.property === property && e.target === targetValue) { results.add(code); break; }
+          if (e.property === property && literalMatches(e.target, target)) { results.add(code); break; }
         }
         if (results.has(code)) continue;
         const lits = DB.literalsByCode.get(code) || [];
         for (const l of lits) {
-          if (l.property === property && l.value === targetValue) { results.add(code); break; }
+          if (l.property === property && literalMatches(l.value, target)) { results.add(code); break; }
         }
       }
       return results;
     }
 
     if (op === 'exists') {
-      const val = typeof value === 'object' ? value.value || value : value;
-      const wantExists = val === 'true' || val === true;
+      const boolLiteral = toLiteral(value);
+      const wantExists = !!(boolLiteral && boolLiteral.kind === 'boolean' ? boolLiteral.value : false);
       for (const code of DB.allCodes) {
         const edges = DB.edgesBySource.get(code) || [];
         let found = edges.some(e => e.property === property);
@@ -585,7 +668,7 @@ function createEvaluator(DB, options) {
     // Hierarchy operators: walk property edges transitively
     if (op === 'is-a' || op === 'descendent-of' || op === 'child-of' ||
         op === 'is-not-a' || op === 'generalizes' || op === 'descendent-leaf') {
-      const targetCode = typeof value === 'object' ? value.value : value;
+      const targetCode = (toLiteral(value) || { value: value }).value;
       const hierarchyProperty = property === 'concept' ? conceptHierarchyProperty : property;
 
       if (op === 'generalizes') {
@@ -684,6 +767,43 @@ function createEvaluator(DB, options) {
   return evaluate;
 }
 
+const SIMPLE_CODE_RE = /^[a-zA-Z0-9][-_a-zA-Z0-9]*$/;
+
+function escapeSingleQuoted(text) {
+  return text.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+function escapeDoubleQuoted(text) {
+  return text.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+function codeToText(code) {
+  return SIMPLE_CODE_RE.test(code) ? code : `'${escapeSingleQuoted(code)}'`;
+}
+
+function literalToText(literal) {
+  if (!literal || typeof literal !== 'object' || literal.type !== 'literal') {
+    return typeof literal === 'string' ? codeToText(literal) : String(literal);
+  }
+  if (literal.kind === 'code') return codeToText(literal.value);
+  if (literal.kind === 'string') return `"${escapeDoubleQuoted(literal.value)}"`;
+  if (literal.kind === 'number') return `num:${String(literal.value)}`;
+  if (literal.kind === 'boolean') return `bool:${literal.value ? 'true' : 'false'}`;
+  if (literal.kind === 'date') return `date:${literal.value}`;
+  return String(literal.value);
+}
+
+function literalToComposeString(literal) {
+  if (!literal || typeof literal !== 'object' || literal.type !== 'literal') {
+    if (typeof literal === 'string') return literal;
+    if (typeof literal === 'number') return String(literal);
+    if (typeof literal === 'boolean') return literal ? 'true' : 'false';
+    return String(literal);
+  }
+  if (literal.kind === 'boolean') return literal.value ? 'true' : 'false';
+  return String(literal.value);
+}
+
 // ==================== AST TO VCL TEXT ====================
 function astToVclText(node) {
   function withSystem(n, text, grouped) {
@@ -692,7 +812,7 @@ function astToVclText(node) {
   }
 
   switch (node.type) {
-    case 'code': return withSystem(node, node.value, false);
+    case 'code': return withSystem(node, codeToText(node.value), false);
     case 'star': return withSystem(node, '*', false);
     case 'codeList': return withSystem(node, '(' + node.codes.join(';') + ')', false);
     case 'filter': {
@@ -700,13 +820,16 @@ function astToVclText(node) {
         'generalizes':'>>', 'child-of':'<!', 'descendent-leaf':'!!<', 'exists':'?',
         'regex':'/', 'in':'^', 'not-in':'~^'};
       const opStr = opMap[node.op] || node.op;
-      if (node.op === 'regex') return withSystem(node, node.property + '/"' + node.value + '"', false);
+      if (node.op === 'regex') return withSystem(node, node.property + '/"' + escapeDoubleQuoted(node.value) + '"', false);
       if (node.op === 'in' || node.op === 'not-in') {
         if (node.value && node.value.type === 'vsRef') return withSystem(node, node.property + opStr + node.value.uri, false);
         if (node.value && node.value.type === 'codeList') return withSystem(node, node.property + opStr + '(' + node.value.codes.join(';') + ')', false);
         return withSystem(node, node.property + opStr + '(' + astToVclText(node.value) + ')', false);
       }
-      return withSystem(node, node.property + opStr + (typeof node.value === 'string' ? node.value : astToVclText(node.value)), false);
+      if (node.value && typeof node.value === 'object' && node.value.type === 'literal') {
+        return withSystem(node, node.property + opStr + literalToText(node.value), false);
+      }
+      return withSystem(node, node.property + opStr + (typeof node.value === 'string' ? codeToText(node.value) : astToVclText(node.value)), false);
     }
     case 'filterList': return withSystem(node, '(' + node.filters.map(f => astToVclText(f)).join(',') + ')', false);
     case 'of': {
@@ -745,6 +868,7 @@ function astToComposeCollection(ast, system) {
 
   function filterValue(v, deps) {
     if (typeof v === 'string') return v;
+    if (v && v.type === 'literal') return literalToComposeString(v);
     if (v && v.type === 'codeList') return v.codes.join(',');
     if (v && v.type === 'code') return v.value;
     if (v && v.type === 'vsRef') return v.uri;
