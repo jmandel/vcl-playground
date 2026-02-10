@@ -160,18 +160,43 @@ function esc(s: string) {
   return s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
 }
 
+function designationUseCoding(useCode?: string) {
+  if (!useCode) return undefined;
+  if (useCode === 'SY') {
+    return {
+      system: 'http://snomed.info/sct',
+      code: '900000000000013009',
+      display: 'Synonym (core metadata concept)',
+    };
+  }
+  if (useCode === 'TMSY') {
+    return {
+      system: 'http://www.nlm.nih.gov/research/umls/rxnorm/term-type',
+      code: 'TMSY',
+      display: 'Tall Man Synonym',
+    };
+  }
+  return {
+    system: 'http://www.nlm.nih.gov/research/umls/rxnorm/term-type',
+    code: useCode,
+  };
+}
+
 function conceptJson(code: string): string {
   const c = DB.byCode.get(code);
   if (!c) return '';
   const concept: any = { code: c.code, display: c.display };
   const literals = DB.literalsByCode.get(code) || [];
-  const designationValues = [...new Set(
-    literals
-      .filter((l: any) => l.property === 'designation' && l.value)
-      .map((l: any) => l.value)
-      .filter((value: string) => value !== c.display)
-  )].sort((a: string, b: string) => a.localeCompare(b));
-  concept.designation = designationValues.map((value: string) => ({ value }));
+  const designationUseByValue = new Map<string, string | undefined>();
+  for (const l of literals) {
+    if (l.property !== 'designation' || !l.value || l.value === c.display) continue;
+    if (!designationUseByValue.has(l.value)) designationUseByValue.set(l.value, l.useCode);
+  }
+  const designationValues = [...designationUseByValue.keys()].sort((a: string, b: string) => a.localeCompare(b));
+  concept.designation = designationValues.map((value: string) => {
+    const use = designationUseCoding(designationUseByValue.get(value));
+    return use ? { use, value } : { value };
+  });
   const property: any[] = [];
   if (c.tty) property.push({ code: 'tty', valueString: c.tty });
   if (c.active !== undefined) property.push({ code: 'status', valueString: c.active ? 'active' : 'inactive' });

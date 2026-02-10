@@ -108,9 +108,10 @@ WITH
     UNION SELECT concept_id FROM pins
     UNION SELECT concept_id FROM scdfs
   ),
-  designation_candidates(concept_id, value, use_rank) AS (
+  designation_candidates(concept_id, value, use_code, use_rank) AS (
     SELECT t.concept_id,
            TRIM(t.text) AS value,
+           COALESCE(NULLIF(TRIM(t.use_code), ''), 'SY') AS use_code,
            CASE t.use_code
              WHEN 'TMSY' THEN 0
              WHEN 'SY' THEN 1
@@ -124,14 +125,24 @@ WITH
       AND TRIM(t.text) <> ''
       AND TRIM(t.text) <> TRIM(c.display)
   ),
-  designation_distinct(concept_id, value, use_rank) AS (
-    SELECT concept_id, value, MIN(use_rank) AS use_rank
-    FROM designation_candidates
-    GROUP BY concept_id, value
+  designation_distinct(concept_id, value, use_code, use_rank) AS (
+    SELECT concept_id, value, use_code, use_rank
+    FROM (
+      SELECT concept_id, value, use_code, use_rank,
+             ROW_NUMBER() OVER (
+               PARTITION BY concept_id, value
+               ORDER BY use_rank ASC, use_code ASC
+             ) AS value_rn
+      FROM designation_candidates
+    )
+    WHERE value_rn = 1
   ),
-  designation_ranked(concept_id, value, rn) AS (
-    SELECT concept_id, value,
-           ROW_NUMBER() OVER (PARTITION BY concept_id ORDER BY use_rank ASC, value ASC) AS rn
+  designation_ranked(concept_id, value, use_code, rn) AS (
+    SELECT concept_id, value, use_code,
+           ROW_NUMBER() OVER (
+             PARTITION BY concept_id
+             ORDER BY use_rank ASC, use_code ASC, value ASC
+           ) AS rn
     FROM designation_distinct
   )
 SELECT json_object(
@@ -166,10 +177,11 @@ SELECT json_object(
     SELECT json_group_array(json_object(
       'code', lit.code,
       'property', lit.property,
-      'value', lit.value
+      'value', lit.value,
+      'useCode', lit.use_code
     ))
     FROM (
-      SELECT c.code AS code, pd.code AS property, cl.value_text AS value
+      SELECT c.code AS code, pd.code AS property, cl.value_text AS value, NULL AS use_code
       FROM concept_literal cl
       JOIN all_ids ai ON ai.concept_id = cl.source_concept_id
       JOIN concept c ON c.concept_id = cl.source_concept_id
@@ -179,7 +191,7 @@ SELECT json_object(
                          'RXN_HUMAN_DRUG', 'RXN_BN_CARDINALITY', 'RXN_QUANTITY',
                          'RXN_IN_EXPRESSED_FLAG', 'RXN_VET_DRUG')
       UNION ALL
-      SELECT c.code AS code, 'designation' AS property, dr.value AS value
+      SELECT c.code AS code, 'designation' AS property, dr.value AS value, dr.use_code AS use_code
       FROM designation_ranked dr
       JOIN concept c ON c.concept_id = dr.concept_id
       WHERE dr.rn <= 5

@@ -444,6 +444,20 @@ describe('regex built-in concept fields', () => {
     const maxPerConcept = Math.max(0, ...counts.values());
     expect(maxPerConcept).toBeLessThanOrEqual(5);
   });
+
+  test('designation literals carry useCode metadata', () => {
+    const designationLiterals = data.literals.filter((l) => l.property === 'designation');
+    expect(designationLiterals.length).toBeGreaterThan(0);
+    for (const l of designationLiterals) {
+      expect(typeof l.useCode).toBe('string');
+      expect(l.useCode.length).toBeGreaterThan(0);
+    }
+  });
+
+  test('designation literals include Tall Man synonym entries when present', () => {
+    const hasTmsy = data.literals.some((l) => l.property === 'designation' && l.useCode === 'TMSY');
+    expect(hasTmsy).toBeTrue();
+  });
 });
 
 describe('concept hierarchy alias semantics', () => {
