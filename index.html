@@ -143,7 +143,7 @@ h2 .anchor-link:hover, h3 .anchor-link:hover { color: var(--accent); }
   when embedding in URL parameters and JSON string values.
 </p>
 
-<h3>Codes and Quoting</h3>
+<h3>Codes and Literals</h3>
 <p>
   A <strong>code</strong> in VCL is either:
 </p>
@@ -151,13 +151,22 @@ h2 .anchor-link:hover, h3 .anchor-link:hover { color: var(--accent); }
   <li>An <strong>unquoted simple code</strong> (<code>SCODE</code>): starts with an alphanumeric character,
     followed by zero or more alphanumeric characters, hyphens, or underscores.
     Examples: <code>161</code>, <code>SCD</code>, <code>LP15653-6</code></li>
-  <li>A <strong>quoted value</strong>: enclosed in double quotes (<code>"</code>) with backslash (<code>\</code>)
-    as the escape character. Only <code>"</code> and <code>\</code> may be escaped.
-    Examples: <code>"J45.0"</code>, <code>"_ActNoImmunizationReason"</code></li>
+  <li>An <strong>explicit quoted code</strong>: enclosed in single quotes (<code>'</code>) with backslash
+    (<code>\</code>) escapes. Example: <code>'J45.0'</code></li>
 </ul>
 <p>
-  Codes containing characters other than <code>[a-zA-Z0-9_-]</code> <strong>MUST</strong> be quoted.
+  Codes containing characters other than <code>[a-zA-Z0-9_-]</code> <strong>MUST</strong> be single-quoted.
 </p>
+<p>
+  Non-code scalar literals use explicit syntax:
+  strings <code>"text"</code>, numbers <code>num:42</code>, booleans <code>bool:true</code>/<code>bool:false</code>,
+  and dates <code>date:YYYY-MM-DD</code>.
+</p>
+<pre><code data-vcl-expr-key="typed-code-explicit"></code></pre>
+<pre><code data-vcl-expr-key="typed-string-explicit"></code></pre>
+<pre><code data-vcl-expr-key="typed-number-explicit"></code></pre>
+<pre><code data-vcl-expr-key="typed-boolean-explicit"></code></pre>
+<pre><code data-vcl-expr-key="typed-date-explicit"></code></pre>
 
 <h3>URIs</h3>
 <p>
@@ -210,7 +219,7 @@ h2 .anchor-link:hover, h3 .anchor-link:hover { color: var(--accent); }
   <dd>
     <p>The <strong>intersection</strong> of two or more sub-expressions. A code is included only if it
     satisfies every sub-expression.</p>
-    <pre><code>has_ingredient=161, has_dose_form=317541</code></pre>
+    <pre><code data-vcl-expr-key="and-ingredient-df"></code></pre>
     <p>Concepts containing acetaminophen <em>and</em> in oral tablet form.
     Maps to multiple <code>filter</code> entries within a single <code>include</code> element.
     <a class="try-link" href="tutorial.html#example=and-ingredient-df">Try it</a></p>
@@ -220,7 +229,7 @@ h2 .anchor-link:hover, h3 .anchor-link:hover { color: var(--accent); }
   <dd>
     <p>The <strong>union</strong> of two or more sub-expressions. A code is included if it
     satisfies any sub-expression.</p>
-    <pre><code>has_ingredient=161; has_ingredient=5640</code></pre>
+    <pre><code data-vcl-expr-key="or-ingredients"></code></pre>
     <p>Concepts containing acetaminophen <em>or</em> ibuprofen.
     Maps to separate <code>include</code> elements.
     <a class="try-link" href="tutorial.html#example=or-ingredients">Try it</a></p>
@@ -229,7 +238,7 @@ h2 .anchor-link:hover, h3 .anchor-link:hover { color: var(--accent); }
   <dt>Exclusion (MINUS) &mdash; <code>-</code></dt>
   <dd>
     <p><strong>Set subtraction</strong>. Codes matching the right side are removed from the left side result.</p>
-    <pre><code>(has_ingredient=161) - (has_ingredient=5489)</code></pre>
+    <pre><code data-vcl-expr-key="exclusion"></code></pre>
     <p>Concepts containing acetaminophen, excluding those also containing hydrocodone.
     The left side maps to <code>compose.include</code>; the right side to <code>compose.exclude</code>.
     <a class="try-link" href="tutorial.html#example=exclusion">Try it</a></p>
@@ -242,7 +251,7 @@ h2 .anchor-link:hover, h3 .anchor-link:hover { color: var(--accent); }
   Parentheses <code>(</code>...<code>)</code> <strong>MUST</strong> be used to group sub-expressions
   when mixing conjunction and disjunction:
 </p>
-<pre><code>(has_ingredient=161, has_dose_form=317541) ; (has_ingredient=5640, has_dose_form=317541)</code></pre>
+<pre><code data-vcl-expr-key="mixed-grouping-tablets"></code></pre>
 <p>
   Acetaminophen oral tablets OR ibuprofen oral tablets. Without parentheses, the grouping is
   ambiguous and implementations <strong>SHOULD</strong> reject it.
@@ -268,7 +277,7 @@ h2 .anchor-link:hover, h3 .anchor-link:hover { color: var(--accent); }
   The simplest VCL expression is a code literal. It evaluates to a set containing exactly that one concept
   (if it exists in the code system).
 </p>
-<pre><code>161</code></pre>
+<pre><code data-vcl-expr-key="code-161"></code></pre>
 <p>
   Selects the single concept with code <code>161</code>.
   <a class="try-link" href="tutorial.html#example=code-161">Try it</a>
@@ -278,7 +287,7 @@ h2 .anchor-link:hover, h3 .anchor-link:hover { color: var(--accent); }
 <p>
   The wildcard <code>*</code> matches all codes in the (scoped) code system.
 </p>
-<pre><code>*</code></pre>
+<pre><code data-vcl-expr-key="star"></code></pre>
 
 <h3 id="expr-filter">Filters</h3>
 <p>
@@ -292,7 +301,7 @@ h2 .anchor-link:hover, h3 .anchor-link:hover { color: var(--accent); }
 <p>
   For example, with the <code>=</code> operator:
 </p>
-<pre><code>has_ingredient = 161</code></pre>
+<pre><code data-vcl-expr-key="filter-ingredient"></code></pre>
 <p>
   Selects all concepts whose <code>has_ingredient</code> property has the value <code>161</code>.
   In RxNorm, this returns drug components (SCDCs) containing acetaminophen.
@@ -302,9 +311,10 @@ h2 .anchor-link:hover, h3 .anchor-link:hover { color: var(--accent); }
   Filters work with both <strong>concept-valued properties</strong> (edges to other concepts in
   the code system) and <strong>literal-valued properties</strong> (string/boolean values):
 </p>
-<pre><code>TTY = SCD</code></pre>
+<pre><code data-vcl-expr-key="filter-tty"></code></pre>
 <p>
-  Selects all concepts whose <code>TTY</code> (term type) literal property equals <code>SCD</code>.
+  Selects all concepts whose <code>TTY</code> (term type) literal property equals code <code>SCD</code>.
+  A string comparison uses double quotes (for example <code>TTY="SCD"</code>).
   <a class="try-link" href="tutorial.html#example=filter-tty">Try it</a>
 </p>
 <p>
@@ -324,7 +334,7 @@ h2 .anchor-link:hover, h3 .anchor-link:hover { color: var(--accent); }
   <code>property</code>/<code>value</code> roles: the left side is the value (starting point)
   and the right side is the property to follow.
 </p>
-<pre><code>104906.has_tradename</code></pre>
+<pre><code data-vcl-expr-key="of-tradename"></code></pre>
 <p>
   Start at concept <code>104906</code> (acetaminophen 24 MG/ML Oral Solution), follow the
   <code>has_tradename</code> relationship outward. Returns all branded versions of that drug.
@@ -332,63 +342,64 @@ h2 .anchor-link:hover, h3 .anchor-link:hover { color: var(--accent); }
 </p>
 <p>
   The value side of <code>.</code> can be any expression that produces a set of codes.
-  Curly braces group a sub-expression for multi-hop traversal:
+  Parentheses group a sub-expression for multi-hop traversal:
 </p>
-<pre><code>{104906.has_tradename}.has_ingredient</code></pre>
+<pre><code data-vcl-expr-key="of-chained"></code></pre>
 <p>
   Start at an SCD &rarr; follow <code>has_tradename</code> (yields SBDs) &rarr;
   follow <code>has_ingredient</code> (yields brand names). This chains two navigation steps.
   <a class="try-link" href="tutorial.html#example=of-chained">Try it</a>
 </p>
 <p>
-  The left side of <code>.</code> may also be a code list, wildcard, URI, or filter list:
+  The left side of <code>.</code> may also be a grouped expression, wildcard, URI, or filter expression:
 </p>
-<pre><code>{has_ingredient=161, has_dose_form=317541}.has_tradename</code></pre>
+<pre><code data-vcl-expr-key="of-from-filtered-set"></code></pre>
 <p>
   Find concepts matching both filters, then follow <code>has_tradename</code> on each.
 </p>
 
-<h3 id="expr-in">The "in" Operator with Code Lists and Filter Lists</h3>
+<h3 id="expr-in">The "in" Operator with Set Expressions</h3>
 <p>
   The <code>^</code> (<code>in</code>) operator tests whether a property's value is a member
   of a specified set. The set can be:
 </p>
 
-<h4>A code list</h4>
+<h4>A code set expression</h4>
 <p>
-  A comma-separated list of codes in curly braces. A code list <strong>MUST</strong> contain
-  two or more codes.
+  A semicolon-separated list of codes in parentheses.
+  A parenthesized code set may contain one or more codes.
 </p>
-<pre><code>has_ingredient ^ {161, 5640, 1191}</code></pre>
+<pre><code data-vcl-expr-key="in-code-list-spaced"></code></pre>
 <p>
   Concepts whose <code>has_ingredient</code> value is <code>161</code>, <code>5640</code>, or
   <code>1191</code> (acetaminophen, ibuprofen, or aspirin).
   <a class="try-link" href="tutorial.html#example=in-code-list">Try it</a>
 </p>
 
-<h4>A filter list (nested query)</h4>
+<h4>Path Traversal</h4>
 <p>
-  A comma-separated list of filters in curly braces. This enables <strong>graph traversal through
-  intermediate nodes</strong>: the property must point to a concept that itself matches
-  the nested filters.
+  You can write the same path-traversal query in two styles: nested form (<code>^</code>) or dotted form (<code>.</code>).
 </p>
-<pre><code>consists_of ^ {has_ingredient = 161}</code></pre>
+<p>Example (multi-hop):</p>
+<div class="side-by-side">
+  <div>
+    <h4>Nested Form</h4>
+    <pre><code data-vcl-expr-key="multihop-in-nested"></code></pre>
+  </div>
+  <div>
+    <h4>Dotted Form</h4>
+    <pre><code data-vcl-expr-key="multihop-in-dotted"></code></pre>
+  </div>
+</div>
 <p>
-  Concepts whose <code>consists_of</code> property points to a concept that has
-  <code>has_ingredient = 161</code>. In RxNorm: SCDs that consist of a component
-  containing acetaminophen.
-  <a class="try-link" href="tutorial.html#example=in-filter-list">Try it</a>
+  Same query, two styles.
+  Rewrite rule: <code>a.b OP x</code> is equivalent to <code>a^(b OP x)</code>; multi-hop extends recursively, so
+  <code>a.b.c OP x</code> is equivalent to <code>a^(b^(c OP x))</code>.
 </p>
-<p>
-  Filter lists can nest further:
-</p>
-<pre><code>consists_of ^ {has_ingredient ^ {has_tradename = 2201670}}</code></pre>
-<p>
-  SCDs consisting of a component whose ingredient has a specific trade name.
-</p>
+<p>Use whichever style is clearer for your use case.</p>
 
 <h4>A ValueSet URI</h4>
-<pre><code>has_ingredient ^ http://example.com/ValueSet/controlled-substances</code></pre>
+<pre><code data-vcl-expr-key="in-vs-uri-controlled-substances"></code></pre>
 <p>
   Concepts whose <code>has_ingredient</code> value is a member of the referenced ValueSet.
 </p>
@@ -397,7 +408,7 @@ h2 .anchor-link:hover, h3 .anchor-link:hover { color: var(--accent); }
 <p>
   The <code>^</code> prefix (without a property) includes all codes that are members of a referenced ValueSet:
 </p>
-<pre><code>^http://hl7.org/fhir/ValueSet/payeetype</code></pre>
+<pre><code data-vcl-expr-key="compose-vs-include"></code></pre>
 <p>
   This maps to <code>ValueSet.compose.include.valueSet</code>.
 </p>
@@ -427,85 +438,104 @@ h2 .anchor-link:hover, h3 .anchor-link:hover { color: var(--accent); }
   <code>{"property": "has_ingredient", "op": "=", "value": "161"}</code>.
 </p>
 <table>
-  <tr>
+<tr>
     <th>FHIR&nbsp;Operator</th>
     <th>VCL</th>
-    <th>Form</th>
+    <th>General Form</th>
+    <th>Examples</th>
     <th>Semantics</th>
   </tr>
   <tr>
     <td><code>=</code></td><td><code>=</code></td>
-    <td><code>prop = value</code></td>
-    <td>Property value equals the specified code/string.</td>
+    <td><code>propertyPath = scalar</code></td>
+    <td><code data-vcl-expr-key="filter-ingredient"></code></td>
+    <td>Property value equals the specified scalar.</td>
   </tr>
   <tr>
     <td><code>is-a</code></td><td><code>&lt;&lt;</code></td>
-    <td><code>prop &lt;&lt; code</code></td>
+    <td><code>propertyPath &lt;&lt; codeLiteral</code></td>
+    <td><code data-vcl-expr-key="is-a"></code></td>
     <td>Property value is the specified code or any of its descendants (subsumption).</td>
   </tr>
   <tr>
     <td><code>descendent-of</code></td><td><code>&lt;</code></td>
-    <td><code>prop &lt; code</code></td>
+    <td><code>propertyPath &lt; codeLiteral</code></td>
+    <td><code data-vcl-expr-key="descendent-of"></code></td>
     <td>Property value is a strict descendant of the specified code (not including the code itself).</td>
   </tr>
   <tr>
     <td><code>is-not-a</code></td><td><code>~&lt;&lt;</code></td>
-    <td><code>prop ~&lt;&lt; code</code></td>
+    <td><code>propertyPath ~&lt;&lt; codeLiteral</code></td>
+    <td><code data-vcl-expr-key="is-not-a"></code></td>
     <td>Property value is NOT the specified code and NOT any of its descendants.</td>
   </tr>
   <tr>
     <td><code>generalizes</code></td><td><code>&gt;&gt;</code></td>
-    <td><code>prop &gt;&gt; code</code></td>
+    <td><code>propertyPath &gt;&gt; codeLiteral</code></td>
+    <td><code data-vcl-expr-key="generalizes"></code></td>
     <td>Property value is the specified code or any of its ancestors.</td>
   </tr>
   <tr>
     <td><code>child-of</code></td><td><code>&lt;!</code></td>
-    <td><code>prop &lt;! code</code></td>
+    <td><code>propertyPath &lt;! codeLiteral</code></td>
+    <td><code data-vcl-expr-key="child-of"></code></td>
     <td>Property value is a direct child of the specified code.</td>
   </tr>
   <tr>
     <td><code>descendent-leaf</code></td><td><code>!!&lt;</code></td>
-    <td><code>prop !!&lt; code</code></td>
+    <td><code>propertyPath !!&lt; codeLiteral</code></td>
+    <td><code data-vcl-expr-key="descendent-leaf"></code></td>
     <td>Property value is a leaf descendant of the specified code (has no children).</td>
   </tr>
   <tr>
     <td><code>in</code></td><td><code>^</code></td>
-    <td><code>prop ^ {values}</code></td>
-    <td>Property value is a member of the specified set (code list, filter list, or ValueSet).
+    <td><code>propertyPath ^ setExpr</code></td>
+    <td><code data-vcl-expr-key="in-code-list"></code> &middot; <code data-vcl-expr-key="in-filter-list"></code></td>
+    <td>Property value is a member of the specified set (code set expression, nested expression, or ValueSet).
       See <a href="#expr-in">"in" operator</a>.</td>
   </tr>
   <tr>
     <td><code>not-in</code></td><td><code>~^</code></td>
-    <td><code>prop ~^ {values}</code></td>
+    <td><code>propertyPath ~^ setExpr</code></td>
+    <td><code data-vcl-expr-key="not-in"></code></td>
     <td>Property value is NOT a member of the specified set.</td>
   </tr>
   <tr>
     <td><code>regex</code></td><td><code>/</code></td>
-    <td><code>prop / "pattern"</code></td>
+    <td><code>propertyPath / "pattern"</code></td>
+    <td><code data-vcl-expr-key="regex-strength"></code> &middot; <code data-vcl-expr-key="regex-designation"></code></td>
     <td>Property value matches the specified regular expression. The pattern <strong>MUST</strong>
       be a quoted string.</td>
   </tr>
   <tr>
     <td><code>exists</code></td><td><code>?</code></td>
-    <td><code>prop ? true</code></td>
-    <td>Tests whether the property has any value. <code>?true</code> matches concepts
-      that have the property; <code>?false</code> matches concepts that lack it.</td>
+    <td><code>propertyPath ? boolLiteral</code></td>
+    <td><code data-vcl-expr-key="exists-tradename"></code></td>
+    <td>Tests whether the property has any value. <code>?bool:true</code> matches concepts
+      that have the property; <code>?bool:false</code> matches concepts that lack it.</td>
   </tr>
   <tr>
     <td><code>of</code></td><td><code>.</code></td>
-    <td><code>value . prop</code></td>
+    <td><code>navigationSource . code</code></td>
+    <td><code data-vcl-expr-key="of-tradename"></code> &middot; <code data-vcl-expr-key="of-filter-list"></code></td>
     <td>Property navigation. Reverses the property/value roles: starts from the value side
       and follows the property. See <a href="#expr-of">"of" operator</a>.</td>
-  </tr>
+</tr>
 </table>
+<p><strong>Operand categories:</strong> <code>propertyPath := code(.code)*</code>; <code>codeLiteral := code | 'code'</code>; <code>boolLiteral := bool:true | bool:false</code>; <code>scalar := codeLiteral | "string" | num:... | bool:... | date:...</code>; <code>setExpr := URI | (expr)</code>; <code>navigationSource := codeLiteral | setExpr | *</code>.</p>
+<p><strong>Hierarchy note:</strong> <code>&lt;&lt;</code>, <code>&lt;</code>, <code>&gt;&gt;</code>, <code>&lt;!</code>, and <code>!!&lt;</code> operate over the named property. Use <code>concept</code> for code hierarchy (for example <code>concept&lt;&lt;369097</code>). In this RxNorm prototype, <code>concept</code> hierarchy is backed by <code>isa</code> edges.</p>
+<p><strong>Hierarchy rhs rule:</strong> for <code>&lt;&lt;</code>, <code>&lt;</code>, <code>~&lt;&lt;</code>, <code>&gt;&gt;</code>, <code>&lt;!</code>, and <code>!!&lt;</code>, the right-hand side is a single <code>codeLiteral</code> (not a <code>setExpr</code>).</p>
+<p><strong>Regex note:</strong> <code>code/"..."</code> matches concept identifiers and <code>display/"..."</code> matches concept display text. <code>designation/"..."</code> matches display plus alternate labels from term strings. Other property names apply regex to that property's values.</p>
+<p><strong>Property lhs rule:</strong> filter operators bind to a property path only: <code>code(.code)*</code>. Grouped expressions are set expressions and cannot appear on the left of filter operators (for example <code>(A;B)&lt;&lt;201</code> is invalid).</p>
+<p><strong>Star hierarchy shorthand:</strong> <code>*&lt;&lt;X</code> is shorthand for <code>concept&lt;&lt;X</code> (similarly for <code>&lt;</code>, <code>&gt;&gt;</code>, <code>&lt;!</code>, <code>!!&lt;</code>, <code>~&lt;&lt;</code>).</p>
 
 <div class="note">
   <strong>FHIR R6 features:</strong> The <code>of</code> operator is new in FHIR R6 and does not
   yet appear in the
   <a href="https://build.fhir.org/valueset-filter-operator.html"><code>filter-operator</code></a>
   ValueSet. Additionally, R6 extends <code>in</code>, <code>not-in</code>, and <code>of</code> to
-  accept <strong>nested filter lists</strong> as values (not just codes or ValueSet URIs). In earlier
-  FHIR versions, the <code>filter.value</code> element is a plain string; nested filters require
+  accept <strong>nested expressions</strong> as values (not just codes or ValueSet URIs). In earlier
+  FHIR versions, the <code>filter.value</code> element is a plain string; nested expressions require
   R6's expanded compose model. See <a href="#compose-mapping">Compose Mapping</a> for details.
 </div>
 </section>
@@ -518,11 +548,11 @@ h2 .anchor-link:hover, h3 .anchor-link:hover { color: var(--accent); }
   the <code>system</code> element in a <code>ValueSet.compose.include</code>). To explicitly
   scope an expression to a code system, prefix it with the system URI in parentheses:
 </p>
-<pre><code>(http://www.nlm.nih.gov/research/umls/rxnorm)(has_ingredient = 161)</code></pre>
+<pre><code data-vcl-expr-key="scope-rxnorm-filter-ingredient-spaced"></code></pre>
 <p>
   To build a multi-system ValueSet, use disjunction with different system prefixes:
 </p>
-<pre><code>(http://loinc.org)(SCALE_TYP = Doc) ; (http://snomed.info/sct)(concept &lt;&lt; 404684003)</code></pre>
+<pre><code data-vcl-expr-key="scope-loinc-snomed-spaced"></code></pre>
 <p>
   Each system-scoped sub-expression maps to a separate <code>include</code> element
   with its own <code>system</code> value.
@@ -557,7 +587,7 @@ h2 .anchor-link:hover, h3 .anchor-link:hover { color: var(--accent); }
 
 <h3>Example</h3>
 <p>Given the VCL expression:</p>
-<pre><code>(http://www.nlm.nih.gov/research/umls/rxnorm)(has_ingredient=161,has_dose_form=317541)</code></pre>
+<pre><code data-vcl-expr-key="scope-rxnorm-and-ingredient-df"></code></pre>
 <p>The implicit ValueSet URI is formed by percent-encoding the expression into the <code>v1</code> query parameter:</p>
 <pre><code>http://fhir.org/VCL?v1=(http%3A%2F%2Fwww.nlm.nih.gov%2Fresearch%2Fumls%2Frxnorm)(has_ingredient%3D161%2Chas_dose_form%3D317541)</code></pre>
 <p>
@@ -600,62 +630,62 @@ h2 .anchor-link:hover, h3 .anchor-link:hover { color: var(--accent); }
 </p>
 
 <h3>Code literal</h3>
-<p><code>(http://www.nlm.nih.gov/research/umls/rxnorm)(161)</code> &rarr;</p>
-<pre><code data-vcl-compose="(http://www.nlm.nih.gov/research/umls/rxnorm)(161)"></code></pre>
+<p><code data-vcl-expr-key="compose-code-literal-rxnorm"></code> &rarr;</p>
+<pre><code data-vcl-compose-key="compose-code-literal-rxnorm"></code></pre>
 
 <h3>Single filter</h3>
-<p><code>(http://www.nlm.nih.gov/research/umls/rxnorm)(has_ingredient = 161)</code> &rarr;</p>
-<pre><code data-vcl-compose="(http://www.nlm.nih.gov/research/umls/rxnorm)(has_ingredient=161)"></code></pre>
+<p><code data-vcl-expr-key="scope-rxnorm-filter-ingredient-spaced"></code> &rarr;</p>
+<pre><code data-vcl-compose-key="compose-filter-rxnorm"></code></pre>
 
 <h3>Conjunction (AND)</h3>
 <p>Multiple filters within a conjunction map to multiple <code>filter</code> entries
   in a <strong>single</strong> <code>include</code>.</p>
-<p><code>(http://www.nlm.nih.gov/research/umls/rxnorm)(has_ingredient=161, has_dose_form=317541)</code> &rarr;</p>
-<pre><code data-vcl-compose="(http://www.nlm.nih.gov/research/umls/rxnorm)(has_ingredient=161,has_dose_form=317541)"></code></pre>
+<p><code data-vcl-expr-key="scope-rxnorm-and-ingredient-df"></code> &rarr;</p>
+<pre><code data-vcl-compose-key="scope-rxnorm-and-ingredient-df"></code></pre>
 
 <h3>Disjunction (OR)</h3>
 <p>Each operand in a disjunction maps to a <strong>separate</strong> <code>include</code>.</p>
-<p><code>(http://www.nlm.nih.gov/research/umls/rxnorm)(has_ingredient=161; has_ingredient=5640)</code> &rarr;</p>
-<pre><code data-vcl-compose="(http://www.nlm.nih.gov/research/umls/rxnorm)(has_ingredient=161;has_ingredient=5640)"></code></pre>
+<p><code data-vcl-expr-key="compose-disjunction-rxnorm"></code> &rarr;</p>
+<pre><code data-vcl-compose-key="compose-disjunction-rxnorm"></code></pre>
 
 <h3>Exclusion</h3>
 <p>The left side maps to <code>include</code>, the right side to <code>exclude</code>.</p>
-<p><code>(http://www.nlm.nih.gov/research/umls/rxnorm)((has_ingredient=161) - (has_ingredient=5489))</code> &rarr;</p>
-<pre><code data-vcl-compose="(http://www.nlm.nih.gov/research/umls/rxnorm)((has_ingredient=161)-(has_ingredient=5489))"></code></pre>
+<p><code data-vcl-expr-key="compose-exclusion-rxnorm"></code> &rarr;</p>
+<pre><code data-vcl-compose-key="compose-exclusion-rxnorm"></code></pre>
 
 <h3>System scoping</h3>
 <p>The system URI prefix maps to the <code>system</code> element in each <code>include</code>/<code>exclude</code>.</p>
-<p><code>(http://loinc.org)(SCALE_TYP=Doc); (http://snomed.info/sct)(concept&lt;&lt;404684003)</code> &rarr;</p>
-<pre><code data-vcl-compose="(http://loinc.org)(SCALE_TYP=Doc);(http://snomed.info/sct)(concept<<404684003)"></code></pre>
+<p><code data-vcl-expr-key="compose-system-scoping"></code> &rarr;</p>
+<pre><code data-vcl-compose-key="compose-system-scoping"></code></pre>
 
 <h3>ValueSet include</h3>
-<p><code>^http://hl7.org/fhir/ValueSet/payeetype</code> &rarr;</p>
-<pre><code data-vcl-compose="^http://hl7.org/fhir/ValueSet/payeetype"></code></pre>
+<p><code data-vcl-expr-key="compose-vs-include"></code> &rarr;</p>
+<pre><code data-vcl-compose-key="compose-vs-include"></code></pre>
 
 <h3>The "of" operator (single hop)</h3>
-<p><code>(http://www.nlm.nih.gov/research/umls/rxnorm)(104906.has_tradename)</code> &rarr;</p>
-<pre><code data-vcl-compose="(http://www.nlm.nih.gov/research/umls/rxnorm)(104906.has_tradename)"></code></pre>
+<p><code data-vcl-expr-key="compose-of-single-hop-rxnorm"></code> &rarr;</p>
+<pre><code data-vcl-compose-key="compose-of-single-hop-rxnorm"></code></pre>
 
 <h3>The "of" operator (chained multi-hop)</h3>
 <p>When an <code>of</code> operator has a complex inner expression, the compose output references
 a separate ValueSet via a <strong>VCL URL</strong>. The inner expression becomes its own ValueSet,
 identified by <code>http://fhir.org/VCL?v1=(system)(expression)</code>.</p>
-<p><code>(http://www.nlm.nih.gov/research/umls/rxnorm)({104906.has_tradename}.has_ingredient)</code> &rarr;</p>
-<pre><code data-vcl-compose="(http://www.nlm.nih.gov/research/umls/rxnorm)({104906.has_tradename}.has_ingredient)"></code></pre>
+<p><code data-vcl-expr-key="compose-of-chained-rxnorm"></code> &rarr;</p>
+<pre><code data-vcl-compose-key="compose-of-chained-rxnorm"></code></pre>
 
-<h3>Nested filter list (in with filter list)</h3>
-<p>Similarly, <code>in</code> or <code>not-in</code> with a filter list emits a VCL URL reference
+<h3>Nested expression membership</h3>
+<p>Similarly, <code>in</code> or <code>not-in</code> with a nested expression emits a VCL URL reference
 to a separate ValueSet containing the nested expression.</p>
-<p><code>(http://www.nlm.nih.gov/research/umls/rxnorm)(consists_of ^ {has_ingredient = 161})</code> &rarr;</p>
-<pre><code data-vcl-compose="(http://www.nlm.nih.gov/research/umls/rxnorm)(consists_of^{has_ingredient=161})"></code></pre>
+<p><code data-vcl-expr-key="compose-nested-expression-membership-rxnorm"></code> &rarr;</p>
+<pre><code data-vcl-compose-key="compose-nested-expression-membership-rxnorm"></code></pre>
 <div class="note">
   <strong>FHIR version notes:</strong> The <code>of</code> filter operator is introduced in
   FHIR R6. In earlier FHIR versions, <code>of</code> must be represented as an extension on
   the <code>filter</code> element. Similarly, R6 extends <code>in</code> and <code>not-in</code>
-  to accept nested filter lists as values; pre-R6 implementations require extensions for this.
+  to accept nested expressions as values; pre-R6 implementations require extensions for this.
   <br><br>
   Complex nested expressions (chained <code>of</code>, <code>in</code>/<code>not-in</code> with
-  filter lists) are represented as references to separate ValueSets identified by VCL URLs
+  nested expressions) are represented as references to separate ValueSets identified by VCL URLs
   (<code>http://fhir.org/VCL?v1=(system)(expression)</code>). This keeps each
   <code>ValueSet.compose</code> flat &mdash; filter values are always strings, never nested objects.
 </div>
@@ -668,61 +698,11 @@ to a separate ValueSet containing the nested expression.</p>
   The authoritative VCL grammar, defined in <a href="https://www.antlr.org/">ANTLR 4</a>,
   with parser rules followed by lexer token definitions:
 </p>
-<div class="grammar"><span class="c">grammar VCL;</span>
-
-<span class="c">// Parser rules</span>
-
-<span class="nt">vcl</span>         : <span class="nt">expr</span> EOF ;
-<span class="nt">expr</span>        : <span class="nt">subExpr</span> (<span class="nt">conjunction</span> | <span class="nt">disjunction</span> | <span class="nt">exclusion</span> )? ;
-<span class="nt">subExpr</span>     : <span class="nt">systemUri</span>? (<span class="nt">simpleExpr</span> | <span class="t">OPEN</span> <span class="nt">expr</span> <span class="t">CLOSE</span>) ;
-<span class="nt">conjunction</span> : (<span class="t">COMMA</span> <span class="nt">subExpr</span>)+ ;
-<span class="nt">disjunction</span> : (<span class="t">SEMI</span> <span class="nt">subExpr</span>)+ ;
-<span class="nt">exclusion</span>   : <span class="t">DASH</span> <span class="nt">subExpr</span> ;
-<span class="nt">simpleExpr</span>  : <span class="t">STAR</span> | <span class="nt">code</span> | <span class="nt">filter</span> | <span class="nt">includeVs</span> ;
-
-<span class="nt">includeVs</span>   : <span class="t">IN</span> (<span class="nt">URI</span> | <span class="nt">systemUri</span>) ;
-<span class="nt">systemUri</span>   : <span class="t">OPEN</span> <span class="nt">URI</span> <span class="t">CLOSE</span> ;
-<span class="nt">filter</span>      : (<span class="nt">property</span>
-                ( <span class="t">EQ</span> <span class="nt">code</span>
-                | <span class="t">IS_A</span> <span class="nt">code</span>
-                | <span class="t">IS_NOT_A</span> <span class="nt">code</span>
-                | <span class="t">DESC_OF</span> <span class="nt">code</span>
-                | <span class="t">REGEX</span> <span class="nt">str</span>
-                | <span class="t">IN</span> (<span class="nt">codeList</span> | <span class="nt">URI</span> | <span class="nt">filterList</span>)
-                | <span class="t">NOT_IN</span> (<span class="nt">codeList</span> | <span class="nt">URI</span> | <span class="nt">filterList</span>)
-                | <span class="t">GENERALIZES</span> <span class="nt">code</span>
-                | <span class="t">CHILD_OF</span> <span class="nt">code</span>
-                | <span class="t">DESC_LEAF</span> <span class="nt">code</span>
-                | <span class="t">EXISTS</span> <span class="nt">code</span>
-                )
-              | (<span class="nt">code</span> | <span class="nt">codeList</span> | <span class="t">STAR</span> | <span class="nt">URI</span> | <span class="nt">filterList</span>) <span class="t">DOT</span> <span class="nt">property</span>  <span class="c">// "of" operator</span>
-              );
-<span class="nt">filterList</span>  : <span class="t">LCRLY</span> <span class="nt">filter</span> (<span class="t">COMMA</span> <span class="nt">filter</span>)* <span class="t">RCRLY</span> ;
-<span class="nt">property</span>    : <span class="nt">code</span> ;
-
-<span class="nt">codeList</span>    : <span class="t">LCRLY</span> <span class="nt">code</span> (<span class="t">COMMA</span> <span class="nt">code</span>)+ <span class="t">RCRLY</span> ;
-<span class="nt">code</span>        : <span class="t">SCODE</span> | <span class="t">QUOTED_VALUE</span> ;
-<span class="nt">str</span>         : <span class="t">QUOTED_VALUE</span> ;
-
-<span class="c">// Lexer tokens</span>
-<span class="t">DASH</span>  : <span class="t">'-'</span> ;    <span class="t">OPEN</span>  : <span class="t">'('</span> ;    <span class="t">CLOSE</span> : <span class="t">')'</span> ;
-<span class="t">LCRLY</span> : <span class="t">'{'</span> ;    <span class="t">RCRLY</span> : <span class="t">'}'</span> ;
-<span class="t">SEMI</span>  : <span class="t">';'</span> ;    <span class="t">COMMA</span> : <span class="t">','</span> ;
-<span class="t">DOT</span>   : <span class="t">'.'</span> ;    <span class="t">STAR</span>  : <span class="t">'*'</span> ;
-
-<span class="t">EQ</span>        : <span class="t">'='</span>   ;   <span class="t">IS_A</span>      : <span class="t">'&lt;&lt;'</span>  ;
-<span class="t">IS_NOT_A</span>  : <span class="t">'~&lt;&lt;'</span> ;   <span class="t">DESC_OF</span>   : <span class="t">'&lt;'</span>   ;
-<span class="t">REGEX</span>     : <span class="t">'/'</span>   ;   <span class="t">IN</span>        : <span class="t">'^'</span>   ;
-<span class="t">NOT_IN</span>    : <span class="t">'~^'</span>  ;   <span class="t">GENERALIZES</span> : <span class="t">'&gt;&gt;'</span> ;
-<span class="t">CHILD_OF</span>  : <span class="t">'&lt;!'</span>  ;   <span class="t">DESC_LEAF</span>   : <span class="t">'!!&lt;'</span> ;
-<span class="t">EXISTS</span>    : <span class="t">'?'</span>   ;
-
-<span class="nt">URI</span>          : [a-zA-Z]+ [:] [a-zA-Z0-9?=:;&amp;_%+\-.@#$^!{}/]+ ;
-<span class="nt">SCODE</span>        : [a-zA-Z0-9] [-_a-zA-Z0-9]* ;   <span class="c">// simple codes only</span>
-<span class="nt">QUOTED_VALUE</span> : '"' (~["\\] | '\\' ["\\])* '"' ;
-
-<span class="nt">WS</span>           : [ \t]+ -> skip ;   <span class="c">// skip spaces, tabs; newlines not permitted</span>
+<div class="note">
+  Validation: [x] Last validated 2026-02-09 via
+  <a href="https://github.com/jmandel/vcl-playground/blob/main/scripts/check-antlr-generated.sh"><code>scripts/check-antlr-generated.sh</code></a>.
 </div>
+<pre class="grammar"><code data-antlr-grammar></code></pre>
 </section>
 
 </div><!-- /.container -->

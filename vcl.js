@@ -1,12 +1,14 @@
 // VCL: ValueSet Compose Language — Parser, Evaluator, and Compose Generator
 // This module can be used standalone (Node/Bun) or embedded in a browser page.
+import { resolveTerminologyProfile } from './terminology-profile.js';
 
 // ==================== TOKENIZER ====================
 const TT = {
-  DASH:'-', OPEN:'(', CLOSE:')', LCRLY:'{', RCRLY:'}', SEMI:';', COMMA:',', DOT:'.', STAR:'*',
+  DASH:'-', OPEN:'(', CLOSE:')', SEMI:';', COMMA:',', DOT:'.', STAR:'*',
   EQ:'=', IS_A:'<<', IS_NOT_A:'~<<', DESC_OF:'<', REGEX:'/', IN:'^', NOT_IN:'~^',
   GENERALIZES:'>>', CHILD_OF:'<!', DESC_LEAF:'!!<', EXISTS:'?',
-  URI:'URI', SCODE:'SCODE', QUOTED:'QUOTED', EOF:'EOF'
+  URI:'URI', SCODE:'SCODE', CODE_QUOTED:'CODE_QUOTED', STRING:'STRING',
+  NUMBER:'NUMBER', BOOLEAN:'BOOLEAN', DATE:'DATE', EOF:'EOF'
 };
 
 class ParseError extends Error {
@@ -17,7 +19,7 @@ function tokenize(input) {
   const tokens = [];
   let i = 0;
   while (i < input.length) {
-    if (input[i] === ' ' || input[i] === '\t') { i++; continue; }
+    if (input[i] === ' ' || input[i] === '\t' || input[i] === '\n' || input[i] === '\r') { i++; continue; }
 
     const rest = input.substring(i);
     let m;
@@ -31,7 +33,7 @@ function tokenize(input) {
     if (rest.startsWith('<!'))  { tokens.push({type: TT.CHILD_OF, value: '<!', pos: i}); i += 2; continue; }
 
     // single-char operators
-    const singles = { '-': TT.DASH, '(': TT.OPEN, ')': TT.CLOSE, '{': TT.LCRLY, '}': TT.RCRLY,
+    const singles = { '-': TT.DASH, '(': TT.OPEN, ')': TT.CLOSE,
       ';': TT.SEMI, ',': TT.COMMA, '.': TT.DOT, '*': TT.STAR, '=': TT.EQ,
       '<': TT.DESC_OF, '/': TT.REGEX, '^': TT.IN, '?': TT.EXISTS, '>': TT.GENERALIZES };
     if (singles[input[i]] && input[i] !== '>') {
@@ -39,7 +41,19 @@ function tokenize(input) {
       i++; continue;
     }
 
-    // Quoted value
+    // Single-quoted explicit code
+    if (input[i] === '\'') {
+      let j = i + 1, val = '';
+      while (j < input.length && input[j] !== '\'') {
+        if (input[j] === '\\' && j + 1 < input.length) { val += input[j + 1]; j += 2; }
+        else { val += input[j]; j++; }
+      }
+      if (j >= input.length) throw new ParseError('Unterminated code literal', i);
+      tokens.push({type: TT.CODE_QUOTED, value: val, pos: i});
+      i = j + 1; continue;
+    }
+
+    // Double-quoted string
     if (input[i] === '"') {
       let j = i + 1, val = '';
       while (j < input.length && input[j] !== '"') {
@@ -47,8 +61,25 @@ function tokenize(input) {
         else { val += input[j]; j++; }
       }
       if (j >= input.length) throw new ParseError('Unterminated string', i);
-      tokens.push({type: TT.QUOTED, value: val, pos: i});
+      tokens.push({type: TT.STRING, value: val, pos: i});
       i = j + 1; continue;
+    }
+
+    // Typed scalars
+    m = rest.match(/^num:(-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?)/);
+    if (m) {
+      tokens.push({type: TT.NUMBER, value: Number(m[1]), pos: i});
+      i += m[0].length; continue;
+    }
+    m = rest.match(/^bool:(true|false)/);
+    if (m) {
+      tokens.push({type: TT.BOOLEAN, value: m[1] === 'true', pos: i});
+      i += m[0].length; continue;
+    }
+    m = rest.match(/^date:([0-9]{4}-[0-9]{2}-[0-9]{2})/);
+    if (m) {
+      tokens.push({type: TT.DATE, value: m[1], pos: i});
+      i += m[0].length; continue;
     }
 
     // URI
@@ -124,7 +155,7 @@ class Parser {
           this.advance();
           const next = this.peek();
           if (next.type === TT.OPEN || next.type === TT.STAR || next.type === TT.SCODE ||
-              next.type === TT.QUOTED || next.type === TT.IN || next.type === TT.LCRLY ||
+              next.type === TT.CODE_QUOTED || next.type === TT.IN ||
               this.isOperator(next.type)) {
             systemUri = uri;
           } else {
@@ -142,13 +173,7 @@ class Parser {
       this.advance();
       const inner = this.parseExpr();
       this.expect(TT.CLOSE);
-      if (this.peek().type === TT.DOT) {
-        this.advance();
-        const prop = this.parseCode();
-        return {type: 'of', value: inner, property: prop, systemUri};
-      }
-      if (systemUri) inner.systemUri = systemUri;
-      return inner;
+      return this.parsePostfixForNavSource(inner, systemUri);
     }
 
     return this.parseSimpleExpr(systemUri);
@@ -164,12 +189,7 @@ class Parser {
 
     if (t.type === TT.STAR) {
       this.advance();
-      if (this.peek().type === TT.DOT) {
-        this.advance();
-        const prop = this.parseCode();
-        return {type: 'of', value: {type: 'star'}, property: prop, systemUri};
-      }
-      return {type: 'star', systemUri};
+      return this.parsePostfixForNavSource({type: 'star'}, systemUri);
     }
 
     if (t.type === TT.IN) {
@@ -185,128 +205,140 @@ class Parser {
       }
       throw new ParseError('Expected URI after ^', t.pos);
     }
-
-    if (t.type === TT.LCRLY) {
-      const saved = this.pos;
-      this.advance();
-      const firstCode = this.parseCode();
-      const next = this.peek();
-
-      if (this.isOperator(next.type) || next.type === TT.DOT) {
-        this.pos = saved;
-        const fl = this.parseFilterList();
-        if (this.peek().type === TT.DOT) {
-          this.advance();
-          const prop = this.parseCode();
-          return {type: 'of', value: fl, property: prop, systemUri};
-        }
-        if (fl.filters && fl.filters.length === 1) return fl.filters[0];
-        return fl;
-      }
-
-      const codes = [firstCode];
-      while (this.match(TT.COMMA)) codes.push(this.parseCode());
-      this.expect(TT.RCRLY);
-      if (codes.length < 2) {
-        throw new ParseError('Code list must contain at least 2 codes', this.peek().pos);
-      }
-
-      if (this.peek().type === TT.DOT) {
-        this.advance();
-        const prop = this.parseCode();
-        return {type: 'of', value: {type: 'codeList', codes}, property: prop, systemUri};
-      }
-
-      return {type: 'codeList', codes, systemUri};
-    }
-
-    if (t.type === TT.SCODE || t.type === TT.QUOTED) {
-      const code = this.parseCode();
-      const next = this.peek();
-
-      if (this.isOperator(next.type)) {
-        return this.parseFilterRest(code, systemUri);
-      }
-
-      if (next.type === TT.DOT) {
-        this.advance();
-        const prop = this.parseCode();
-        return {type: 'of', value: {type: 'code', value: code}, property: prop, systemUri};
-      }
-
-      return {type: 'code', value: code, systemUri};
+    if (t.type === TT.SCODE || t.type === TT.CODE_QUOTED) {
+      return this.parseCodeLedExpr(systemUri);
     }
 
     throw new ParseError(`Unexpected token: ${t.type} '${t.value}'`, t.pos);
   }
 
+  parseNavTail(node, systemUri) {
+    let out = node;
+    while (this.match(TT.DOT)) {
+      const prop = this.parseCode();
+      out = {type: 'of', value: out, property: prop};
+    }
+    if (systemUri) out.systemUri = systemUri;
+    return out;
+  }
+
+  // For star/grouped navSource:
+  // - nav only: navSource.p1.p2
+  // - operators are not accepted after a grouped/star navigation chain
+  parsePostfixForNavSource(navSource, systemUri) {
+    const path = [];
+    while (this.match(TT.DOT)) path.push(this.parseCode());
+
+    let out;
+    if (path.length === 0 && navSource.type === 'star' && this.isOperator(this.peek().type)) {
+      if (!this.isHierarchyOperatorToken(this.peek().type)) {
+        throw new ParseError('Star shorthand is only supported for hierarchy operators', this.peek().pos);
+      }
+      out = this.parseFilterRest('concept', null);
+    } else if (path.length > 0) {
+      out = navSource;
+      for (const prop of path) out = {type: 'of', value: out, property: prop};
+    } else {
+      out = navSource;
+    }
+
+    if (systemUri) out.systemUri = systemUri;
+    return out;
+  }
+
+  parseCodeLedExpr(systemUri) {
+    const path = this.parsePropertyPath();
+
+    if (this.isOperator(this.peek().type)) {
+      return this.parsePathFilter(path, systemUri);
+    }
+
+    let node = {type: 'code', value: path[0]};
+    for (let i = 1; i < path.length; i++) {
+      node = {type: 'of', value: node, property: path[i]};
+    }
+    if (systemUri) node.systemUri = systemUri;
+    return node;
+  }
+
+  // Dotted property-path sugar:
+  //   a.b.c OP x  =>  a^(b^(c OP x))
+  parsePathFilter(path, systemUri) {
+    const terminal = this.parseFilterTail();
+    return this.buildPathFilter(path, terminal, systemUri);
+  }
+
+  parsePropertyPath() {
+    const path = [this.parseCode()];
+    while (this.match(TT.DOT)) path.push(this.parseCode());
+    return path;
+  }
+
+  cloneFilterValue(value) {
+    if (value && typeof value === 'object') return JSON.parse(JSON.stringify(value));
+    return value;
+  }
+
+  buildPathFilter(path, terminal, systemUri) {
+    let node = {
+      type: 'filter',
+      property: path[path.length - 1],
+      op: terminal.op,
+      value: this.cloneFilterValue(terminal.value),
+      systemUri: null
+    };
+    for (let i = path.length - 2; i >= 0; i--) {
+      node = {type: 'filter', property: path[i], op: 'in', value: node};
+    }
+    if (systemUri) node.systemUri = systemUri;
+    return node;
+  }
+
+  isHierarchyOperatorToken(type) {
+    return [TT.IS_A, TT.IS_NOT_A, TT.DESC_OF, TT.GENERALIZES, TT.CHILD_OF, TT.DESC_LEAF].includes(type);
+  }
+
   parseFilterRest(property, systemUri) {
+    const terminal = this.parseFilterTail();
+    return { type: 'filter', property, op: terminal.op, value: terminal.value, systemUri };
+  }
+
+  parseFilterTail() {
     const op = this.advance();
     const opType = op.type;
 
-    if (opType === TT.EQ) return {type: 'filter', property, op: '=', value: this.parseCode(), systemUri};
-    if (opType === TT.IS_A) return {type: 'filter', property, op: 'is-a', value: this.parseCode(), systemUri};
-    if (opType === TT.IS_NOT_A) return {type: 'filter', property, op: 'is-not-a', value: this.parseCode(), systemUri};
-    if (opType === TT.DESC_OF) return {type: 'filter', property, op: 'descendent-of', value: this.parseCode(), systemUri};
-    if (opType === TT.GENERALIZES) return {type: 'filter', property, op: 'generalizes', value: this.parseCode(), systemUri};
-    if (opType === TT.CHILD_OF) return {type: 'filter', property, op: 'child-of', value: this.parseCode(), systemUri};
-    if (opType === TT.DESC_LEAF) return {type: 'filter', property, op: 'descendent-leaf', value: this.parseCode(), systemUri};
-    if (opType === TT.EXISTS) return {type: 'filter', property, op: 'exists', value: this.parseCode(), systemUri};
+    if (opType === TT.EQ) return { op: '=', value: this.parseScalarLiteral() };
+    if (opType === TT.IS_A) return { op: 'is-a', value: this.parseCode() };
+    if (opType === TT.IS_NOT_A) return { op: 'is-not-a', value: this.parseCode() };
+    if (opType === TT.DESC_OF) return { op: 'descendent-of', value: this.parseCode() };
+    if (opType === TT.GENERALIZES) return { op: 'generalizes', value: this.parseCode() };
+    if (opType === TT.CHILD_OF) return { op: 'child-of', value: this.parseCode() };
+    if (opType === TT.DESC_LEAF) return { op: 'descendent-leaf', value: this.parseCode() };
+    if (opType === TT.EXISTS) return { op: 'exists', value: this.parseBooleanLiteral() };
 
-    if (opType === TT.REGEX) {
-      const str = this.expect(TT.QUOTED).value;
-      return {type: 'filter', property, op: 'regex', value: str, systemUri};
-    }
+    if (opType === TT.REGEX) return { op: 'regex', value: this.expect(TT.STRING).value };
 
     if (opType === TT.IN || opType === TT.NOT_IN) {
       const inOp = opType === TT.IN ? 'in' : 'not-in';
       const next = this.peek();
-      if (next.type === TT.URI) {
-        return {type: 'filter', property, op: inOp, value: {type: 'vsRef', uri: this.advance().value}, systemUri};
-      }
-      if (next.type === TT.LCRLY) {
-        const saved = this.pos;
-        this.advance();
-        const firstCode = this.parseCode();
-        const after = this.peek();
-        this.pos = saved;
-
-        if (this.isOperator(after.type) || after.type === TT.DOT) {
-          const fl = this.parseFilterList();
-          return {type: 'filter', property, op: inOp, value: fl, systemUri};
-        } else {
-          const cl = this.parseCodeList();
-          return {type: 'filter', property, op: inOp, value: cl, systemUri};
-        }
-      }
-      throw new ParseError(`Expected {codeList}, {filterList}, or URI after ${op.value}`, op.pos);
+      if (next.type === TT.URI) return { op: inOp, value: {type: 'vsRef', uri: this.advance().value} };
+      if (next.type === TT.OPEN) return { op: inOp, value: this.parseParenExpr() };
+      throw new ParseError(`Expected (expression) or URI after ${op.value}`, op.pos);
     }
 
     throw new ParseError(`Unknown operator: ${op.value}`, op.pos);
   }
 
-  parseCodeList() {
-    this.expect(TT.LCRLY);
-    const codes = [this.parseCode()];
-    while (this.match(TT.COMMA)) codes.push(this.parseCode());
-    this.expect(TT.RCRLY);
-    if (codes.length < 2) {
-      throw new ParseError('Code list must contain at least 2 codes', this.peek().pos);
-    }
-    return {type: 'codeList', codes};
-  }
-
-  parseFilterList() {
-    this.expect(TT.LCRLY);
-    const filters = [this.parseFilter()];
-    while (this.match(TT.COMMA)) filters.push(this.parseFilter());
-    this.expect(TT.RCRLY);
-    return {type: 'filterList', filters};
+  parseParenExpr() {
+    this.expect(TT.OPEN);
+    const inner = this.parseExpr();
+    this.expect(TT.CLOSE);
+    return inner;
   }
 
   parseFilter() {
     const t = this.peek();
-    if (t.type === TT.SCODE || t.type === TT.QUOTED) {
+    if (t.type === TT.SCODE || t.type === TT.CODE_QUOTED) {
       const code = this.parseCode();
       if (this.isOperator(this.peek().type)) {
         return this.parseFilterRest(code, null);
@@ -324,8 +356,36 @@ class Parser {
   parseCode() {
     const t = this.peek();
     if (t.type === TT.SCODE) return this.advance().value;
-    if (t.type === TT.QUOTED) return this.advance().value;
+    if (t.type === TT.CODE_QUOTED) return this.advance().value;
     throw new ParseError(`Expected code, got ${t.type} '${t.value}'`, t.pos);
+  }
+
+  parseScalarLiteral() {
+    const t = this.peek();
+    if (t.type === TT.SCODE || t.type === TT.CODE_QUOTED) {
+      return { type: 'literal', kind: 'code', value: this.parseCode() };
+    }
+    if (t.type === TT.STRING) return this.parseStringLiteral();
+    if (t.type === TT.NUMBER) return this.parseNumberLiteral();
+    if (t.type === TT.BOOLEAN) return this.parseBooleanLiteral();
+    if (t.type === TT.DATE) return this.parseDateLiteral();
+    throw new ParseError(`Expected scalar literal, got ${t.type} '${t.value}'`, t.pos);
+  }
+
+  parseStringLiteral() {
+    return { type: 'literal', kind: 'string', value: this.expect(TT.STRING).value };
+  }
+
+  parseNumberLiteral() {
+    return { type: 'literal', kind: 'number', value: this.expect(TT.NUMBER).value };
+  }
+
+  parseBooleanLiteral() {
+    return { type: 'literal', kind: 'boolean', value: this.expect(TT.BOOLEAN).value };
+  }
+
+  parseDateLiteral() {
+    return { type: 'literal', kind: 'date', value: this.expect(TT.DATE).value };
   }
 }
 
@@ -364,6 +424,16 @@ function indexData(d) {
 function createEvaluator(DB, options) {
   options = options || {};
   const userResolver = typeof options.resolveValueSet === 'function' ? options.resolveValueSet : null;
+  const terminologyResolver = typeof options.resolveTerminologyProfile === 'function' ?
+    options.resolveTerminologyProfile : null;
+  const terminologySystem = typeof options.terminologySystem === 'string' &&
+    options.terminologySystem.length > 0 ? options.terminologySystem : DB.system;
+  const terminologyProfile = resolveTerminologyProfile(terminologySystem, terminologyResolver);
+  // Backward-compatible explicit override (kept local to evaluator config).
+  const conceptHierarchyPropertyOverride = typeof options.conceptHierarchyProperty === 'string' &&
+    options.conceptHierarchyProperty.length > 0 ? options.conceptHierarchyProperty : null;
+  const conceptHierarchyProperty = conceptHierarchyPropertyOverride ||
+    terminologyProfile.conceptHierarchyProperty || null;
   const resolvingUris = new Set();
 
   function decodeImplicitVclUri(uri) {
@@ -483,29 +553,71 @@ function createEvaluator(DB, options) {
     }
   }
 
+  function toLiteral(value) {
+    if (value && typeof value === 'object' && value.type === 'literal') return value;
+    if (typeof value === 'string') return { type: 'literal', kind: 'code', value };
+    if (typeof value === 'number') return { type: 'literal', kind: 'number', value };
+    if (typeof value === 'boolean') return { type: 'literal', kind: 'boolean', value };
+    return null;
+  }
+
+  function literalMatches(candidate, literal) {
+    if (!literal) return false;
+    if (literal.kind === 'number') {
+      const n = typeof candidate === 'number' ? candidate : Number(candidate);
+      return Number.isFinite(n) && n === literal.value;
+    }
+    if (literal.kind === 'boolean') {
+      if (typeof candidate === 'boolean') return candidate === literal.value;
+      if (typeof candidate === 'string') {
+        if (candidate === 'true') return literal.value === true;
+        if (candidate === 'false') return literal.value === false;
+      }
+      return false;
+    }
+    return String(candidate) === String(literal.value);
+  }
+
+  function designationValuesForCode(code) {
+    const values = new Set();
+    const concept = DB.byCode.get(code);
+    if (concept && concept.display) values.add(concept.display);
+    for (const l of (DB.literalsByCode.get(code) || [])) {
+      if (l.property === 'designation' && l.value) values.add(l.value);
+    }
+    return values;
+  }
+
   function evalFilter(ast) {
     const {property, op, value} = ast;
     const results = new Set();
 
     if (op === '=') {
-      const targetValue = typeof value === 'object' ? value.value : value;
+      const target = toLiteral(value);
       for (const code of DB.allCodes) {
+        if (property === 'designation') {
+          const values = designationValuesForCode(code);
+          for (const v of values) {
+            if (literalMatches(v, target)) { results.add(code); break; }
+          }
+          continue;
+        }
         const edges = DB.edgesBySource.get(code) || [];
         for (const e of edges) {
-          if (e.property === property && e.target === targetValue) { results.add(code); break; }
+          if (e.property === property && literalMatches(e.target, target)) { results.add(code); break; }
         }
         if (results.has(code)) continue;
         const lits = DB.literalsByCode.get(code) || [];
         for (const l of lits) {
-          if (l.property === property && l.value === targetValue) { results.add(code); break; }
+          if (l.property === property && literalMatches(l.value, target)) { results.add(code); break; }
         }
       }
       return results;
     }
 
     if (op === 'exists') {
-      const val = typeof value === 'object' ? value.value || value : value;
-      const wantExists = val === 'true' || val === true;
+      const boolLiteral = toLiteral(value);
+      const wantExists = !!(boolLiteral && boolLiteral.kind === 'boolean' ? boolLiteral.value : false);
       for (const code of DB.allCodes) {
         const edges = DB.edgesBySource.get(code) || [];
         let found = edges.some(e => e.property === property);
@@ -522,10 +634,19 @@ function createEvaluator(DB, options) {
       let re;
       try { re = new RegExp(value); } catch(e) { return results; }
       for (const code of DB.allCodes) {
+        // Built-in concept fields: code/display are matched directly on the concept record.
+        // designation matches against display + designation literal values.
         if (property === 'code' || property === 'display') {
           const c = DB.byCode.get(code);
           const testVal = property === 'code' ? c.code : c.display;
           if (testVal && re.test(testVal)) results.add(code);
+          continue;
+        }
+        if (property === 'designation') {
+          const values = designationValuesForCode(code);
+          for (const v of values) {
+            if (re.test(v)) { results.add(code); break; }
+          }
           continue;
         }
         const lits = DB.literalsByCode.get(code) || [];
@@ -544,23 +665,25 @@ function createEvaluator(DB, options) {
       let matchSet;
       if (value.type === 'codeList') {
         matchSet = new Set(value.codes);
-      } else if (value.type === 'filterList') {
-        matchSet = new Set();
-        let nested = null;
-        for (const f of value.filters) {
-          const fResult = evaluate(f);
-          if (nested === null) nested = fResult;
-          else nested = intersect(nested, fResult);
-        }
-        matchSet = nested || new Set();
       } else if (value.type === 'vsRef') {
         matchSet = resolveValueSetCodes(value.uri);
         if (matchSet === null) return results;
+      } else if (value && typeof value === 'object') {
+        matchSet = evaluate(value);
       } else {
         return results;
       }
 
       for (const code of DB.allCodes) {
+        if (property === 'designation') {
+          const values = designationValuesForCode(code);
+          let found = false;
+          for (const v of values) {
+            if (matchSet.has(v)) { found = true; break; }
+          }
+          if (op === 'in' ? found : !found) results.add(code);
+          continue;
+        }
         const edges = DB.edgesBySource.get(code) || [];
         let found = false;
         for (const e of edges) {
@@ -580,7 +703,8 @@ function createEvaluator(DB, options) {
     // Hierarchy operators: walk property edges transitively
     if (op === 'is-a' || op === 'descendent-of' || op === 'child-of' ||
         op === 'is-not-a' || op === 'generalizes' || op === 'descendent-leaf') {
-      const targetCode = typeof value === 'object' ? value.value : value;
+      const targetCode = (toLiteral(value) || { value: value }).value;
+      const hierarchyProperty = property === 'concept' ? conceptHierarchyProperty : property;
 
       if (op === 'generalizes') {
         // Ancestors of targetCode (plus self): codes reachable by following property edges from targetCode
@@ -591,7 +715,7 @@ function createEvaluator(DB, options) {
           if (ancestors.has(cur)) continue;
           ancestors.add(cur);
           for (const e of (DB.edgesBySource.get(cur) || [])) {
-            if (e.property === property) queue.push(e.target);
+            if (e.property === hierarchyProperty) queue.push(e.target);
           }
         }
         for (const code of ancestors) {
@@ -605,7 +729,7 @@ function createEvaluator(DB, options) {
       const reverseEdges = new Map();
       for (const code of DB.allCodes) {
         for (const e of (DB.edgesBySource.get(code) || [])) {
-          if (e.property === property) {
+          if (e.property === hierarchyProperty) {
             if (!reverseEdges.has(e.target)) reverseEdges.set(e.target, []);
             reverseEdges.get(e.target).push(code);
           }
@@ -678,6 +802,43 @@ function createEvaluator(DB, options) {
   return evaluate;
 }
 
+const SIMPLE_CODE_RE = /^[a-zA-Z0-9][-_a-zA-Z0-9]*$/;
+
+function escapeSingleQuoted(text) {
+  return text.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+function escapeDoubleQuoted(text) {
+  return text.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+function codeToText(code) {
+  return SIMPLE_CODE_RE.test(code) ? code : `'${escapeSingleQuoted(code)}'`;
+}
+
+function literalToText(literal) {
+  if (!literal || typeof literal !== 'object' || literal.type !== 'literal') {
+    return typeof literal === 'string' ? codeToText(literal) : String(literal);
+  }
+  if (literal.kind === 'code') return codeToText(literal.value);
+  if (literal.kind === 'string') return `"${escapeDoubleQuoted(literal.value)}"`;
+  if (literal.kind === 'number') return `num:${String(literal.value)}`;
+  if (literal.kind === 'boolean') return `bool:${literal.value ? 'true' : 'false'}`;
+  if (literal.kind === 'date') return `date:${literal.value}`;
+  return String(literal.value);
+}
+
+function literalToComposeString(literal) {
+  if (!literal || typeof literal !== 'object' || literal.type !== 'literal') {
+    if (typeof literal === 'string') return literal;
+    if (typeof literal === 'number') return String(literal);
+    if (typeof literal === 'boolean') return literal ? 'true' : 'false';
+    return String(literal);
+  }
+  if (literal.kind === 'boolean') return literal.value ? 'true' : 'false';
+  return String(literal.value);
+}
+
 // ==================== AST TO VCL TEXT ====================
 function astToVclText(node) {
   function withSystem(n, text, grouped) {
@@ -686,30 +847,34 @@ function astToVclText(node) {
   }
 
   switch (node.type) {
-    case 'code': return withSystem(node, node.value, false);
+    case 'code': return withSystem(node, codeToText(node.value), false);
     case 'star': return withSystem(node, '*', false);
-    case 'codeList': return withSystem(node, '{' + node.codes.join(',') + '}', false);
+    case 'codeList': return withSystem(node, '(' + node.codes.join(';') + ')', false);
     case 'filter': {
       const opMap = {'=':'=', 'is-a':'<<', 'is-not-a':'~<<', 'descendent-of':'<',
         'generalizes':'>>', 'child-of':'<!', 'descendent-leaf':'!!<', 'exists':'?',
         'regex':'/', 'in':'^', 'not-in':'~^'};
       const opStr = opMap[node.op] || node.op;
-      if (node.op === 'regex') return withSystem(node, node.property + '/"' + node.value + '"', false);
+      if (node.op === 'regex') return withSystem(node, node.property + '/"' + escapeDoubleQuoted(node.value) + '"', false);
       if (node.op === 'in' || node.op === 'not-in') {
         if (node.value && node.value.type === 'vsRef') return withSystem(node, node.property + opStr + node.value.uri, false);
-        if (node.value && node.value.type === 'codeList') return withSystem(node, node.property + opStr + '{' + node.value.codes.join(',') + '}', false);
-        if (node.value && node.value.type === 'filterList') return withSystem(node, node.property + opStr + astToVclText(node.value), false);
-        return withSystem(node, node.property + opStr + astToVclText(node.value), false);
+        if (node.value && node.value.type === 'codeList') return withSystem(node, node.property + opStr + '(' + node.value.codes.join(';') + ')', false);
+        return withSystem(node, node.property + opStr + '(' + astToVclText(node.value) + ')', false);
       }
-      return withSystem(node, node.property + opStr + (typeof node.value === 'string' ? node.value : astToVclText(node.value)), false);
+      if (node.value && typeof node.value === 'object' && node.value.type === 'literal') {
+        return withSystem(node, node.property + opStr + literalToText(node.value), false);
+      }
+      return withSystem(node, node.property + opStr + (typeof node.value === 'string' ? codeToText(node.value) : astToVclText(node.value)), false);
     }
-    case 'filterList': return withSystem(node, '{' + node.filters.map(f => astToVclText(f)).join(',') + '}', false);
+    case 'filterList': return withSystem(node, '(' + node.filters.map(f => astToVclText(f)).join(',') + ')', false);
     case 'of': {
       const valText = astToVclText(node.value);
-      // Wrap in braces if inner is complex, but filterList/codeList already include braces
-      const needsBraces = node.value.type !== 'code' && node.value.type !== 'star'
-        && node.value.type !== 'filterList' && node.value.type !== 'codeList';
-      return withSystem(node, (needsBraces ? '{' + valText + '}' : valText) + '.' + node.property, false);
+      // Wrap in parens if inner is complex; code/star/codeList are self-delimiting.
+      const needsParens = node.value.type !== 'code' &&
+        node.value.type !== 'star' &&
+        node.value.type !== 'codeList' &&
+        node.value.type !== 'of';
+      return withSystem(node, (needsParens ? '(' + valText + ')' : valText) + '.' + node.property, false);
     }
     case 'conjunction': return withSystem(node, node.parts.map(p => astToVclText(p)).join(','), true);
     case 'disjunction': return withSystem(node, node.parts.map(p => astToVclText(p)).join(';'), true);
@@ -738,6 +903,7 @@ function astToComposeCollection(ast, system) {
 
   function filterValue(v, deps) {
     if (typeof v === 'string') return v;
+    if (v && v.type === 'literal') return literalToComposeString(v);
     if (v && v.type === 'codeList') return v.codes.join(',');
     if (v && v.type === 'code') return v.value;
     if (v && v.type === 'vsRef') return v.uri;
@@ -764,6 +930,22 @@ function astToComposeCollection(ast, system) {
   function buildCompose(ast, subDeps) {
     const compose = { include: [], exclude: [] };
 
+    function membershipFilterForNode(node, sys) {
+      // In conjunctions, constrain membership in a computed set of concepts.
+      // This preserves arbitrary sub-expressions without dropping structure.
+      if (node.type === 'star') return null;
+      if (node.type === 'code') {
+        return { property: 'concept', op: '=', value: node.value };
+      }
+      if (node.type === 'includeVs') {
+        return { property: 'concept', op: 'in', value: node.uri };
+      }
+      const nodeSys = node.systemUri || sys;
+      const url = vclUrl(nodeSys, node);
+      collectDependency(node, url, subDeps);
+      return { property: 'concept', op: 'in', value: url };
+    }
+
     function addFilters(node, target) {
       const sys = node.systemUri || system;
       if (node.type === 'filter') {
@@ -785,7 +967,8 @@ function astToComposeCollection(ast, system) {
               filters.push({ property: p.property, op: 'of', value: url });
             }
           } else {
-            filters.push({ property: 'vcl', op: '=', value: '(complex)' });
+            const membership = membershipFilterForNode(p, sys);
+            if (membership) filters.push(membership);
           }
         }
         target.push({ system: sys, filter: filters });

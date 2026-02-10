@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Extract a pain-management-focused subset of RxNorm for the VCL tutorial.
 # Outputs rxnorm-subset.json with concepts, edges, and literal properties.
+# Includes up to 5 alternate designations per concept from term strings
+# (including synonym and TallMan variants) as literal property "designation"
+# to support queries like designation/"ibuprofen".
 #
 # Usage: ./extract-rxnorm-subset.sh [path-to-rxnorm.db]
 # Default DB: ~/hobby/FHIRsmith/data/terminology-cache/rxnorm_02022026.db
@@ -104,6 +107,43 @@ WITH
     UNION SELECT concept_id FROM mins
     UNION SELECT concept_id FROM pins
     UNION SELECT concept_id FROM scdfs
+  ),
+  designation_candidates(concept_id, value, use_code, use_rank) AS (
+    SELECT t.concept_id,
+           TRIM(t.text) AS value,
+           COALESCE(NULLIF(TRIM(t.use_code), ''), 'SY') AS use_code,
+           CASE t.use_code
+             WHEN 'TMSY' THEN 0
+             WHEN 'SY' THEN 1
+             ELSE 2
+           END AS use_rank
+    FROM term_fts t
+    JOIN all_ids ai ON ai.concept_id = t.concept_id
+    JOIN concept c ON c.concept_id = t.concept_id
+    WHERE t.lang = 'en'
+      AND t.text IS NOT NULL
+      AND TRIM(t.text) <> ''
+      AND TRIM(t.text) <> TRIM(c.display)
+  ),
+  designation_distinct(concept_id, value, use_code, use_rank) AS (
+    SELECT concept_id, value, use_code, use_rank
+    FROM (
+      SELECT concept_id, value, use_code, use_rank,
+             ROW_NUMBER() OVER (
+               PARTITION BY concept_id, value
+               ORDER BY use_rank ASC, use_code ASC
+             ) AS value_rn
+      FROM designation_candidates
+    )
+    WHERE value_rn = 1
+  ),
+  designation_ranked(concept_id, value, use_code, rn) AS (
+    SELECT concept_id, value, use_code,
+           ROW_NUMBER() OVER (
+             PARTITION BY concept_id
+             ORDER BY use_rank ASC, use_code ASC, value ASC
+           ) AS rn
+    FROM designation_distinct
   )
 SELECT json_object(
   'system', 'http://www.nlm.nih.gov/research/umls/rxnorm',
@@ -135,18 +175,27 @@ SELECT json_object(
   ),
   'literals', (
     SELECT json_group_array(json_object(
-      'code', c.code,
-      'property', pd.code,
-      'value', cl.value_text
+      'code', lit.code,
+      'property', lit.property,
+      'value', lit.value,
+      'useCode', lit.use_code
     ))
-    FROM concept_literal cl
-    JOIN all_ids ai ON ai.concept_id = cl.source_concept_id
-    JOIN concept c ON c.concept_id = cl.source_concept_id
-    JOIN property_def pd ON pd.property_id = cl.property_id
-    WHERE cl.active = 1
-      AND pd.code IN ('TTY', 'RXN_STRENGTH', 'RXTERM_FORM', 'RXN_AVAILABLE_STRENGTH',
-                       'RXN_HUMAN_DRUG', 'RXN_BN_CARDINALITY', 'RXN_QUANTITY',
-                       'RXN_IN_EXPRESSED_FLAG', 'RXN_VET_DRUG')
+    FROM (
+      SELECT c.code AS code, pd.code AS property, cl.value_text AS value, NULL AS use_code
+      FROM concept_literal cl
+      JOIN all_ids ai ON ai.concept_id = cl.source_concept_id
+      JOIN concept c ON c.concept_id = cl.source_concept_id
+      JOIN property_def pd ON pd.property_id = cl.property_id
+      WHERE cl.active = 1
+        AND pd.code IN ('TTY', 'RXN_STRENGTH', 'RXTERM_FORM', 'RXN_AVAILABLE_STRENGTH',
+                         'RXN_HUMAN_DRUG', 'RXN_BN_CARDINALITY', 'RXN_QUANTITY',
+                         'RXN_IN_EXPRESSED_FLAG', 'RXN_VET_DRUG')
+      UNION ALL
+      SELECT c.code AS code, 'designation' AS property, dr.value AS value, dr.use_code AS use_code
+      FROM designation_ranked dr
+      JOIN concept c ON c.concept_id = dr.concept_id
+      WHERE dr.rn <= 5
+    ) lit
   )
 );
 SQL

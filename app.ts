@@ -1,6 +1,7 @@
 import { parseVCL, indexData, createEvaluator, astToComposeCollection, prettyAST } from './vcl.js';
 import RXNORM_DATA from './rxnorm-subset.json';
 import EXAMPLES from './examples.json';
+import { expressionByKey, hydrateExpressionSnippets } from './expression-catalog.ts';
 
 // ==================== DATA INDEX ====================
 const DB = indexData(RXNORM_DATA);
@@ -9,9 +10,7 @@ const system = RXNORM_DATA.system;
 
 // ==================== EXAMPLES LOOKUP ====================
 function exampleExpr(name: string): string {
-  const ex = (EXAMPLES as Record<string, {label: string; expr: string}>)[name];
-  if (!ex) throw new Error(`Unknown example: ${name}`);
-  return ex.expr;
+  return expressionByKey(name);
 }
 
 // ==================== UI ====================
@@ -161,11 +160,43 @@ function esc(s: string) {
   return s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
 }
 
+function designationUseCoding(useCode?: string) {
+  if (!useCode) return undefined;
+  if (useCode === 'SY') {
+    return {
+      system: 'http://snomed.info/sct',
+      code: '900000000000013009',
+      display: 'Synonym (core metadata concept)',
+    };
+  }
+  if (useCode === 'TMSY') {
+    return {
+      system: 'http://www.nlm.nih.gov/research/umls/rxnorm/term-type',
+      code: 'TMSY',
+      display: 'Tall Man Synonym',
+    };
+  }
+  return {
+    system: 'http://www.nlm.nih.gov/research/umls/rxnorm/term-type',
+    code: useCode,
+  };
+}
+
 function conceptJson(code: string): string {
   const c = DB.byCode.get(code);
   if (!c) return '';
   const concept: any = { code: c.code, display: c.display };
-  concept.designation = [];
+  const literals = DB.literalsByCode.get(code) || [];
+  const designationUseByValue = new Map<string, string | undefined>();
+  for (const l of literals) {
+    if (l.property !== 'designation' || !l.value || l.value === c.display) continue;
+    if (!designationUseByValue.has(l.value)) designationUseByValue.set(l.value, l.useCode);
+  }
+  const designationValues = [...designationUseByValue.keys()].sort((a: string, b: string) => a.localeCompare(b));
+  concept.designation = designationValues.map((value: string) => {
+    const use = designationUseCoding(designationUseByValue.get(value));
+    return use ? { use, value } : { value };
+  });
   const property: any[] = [];
   if (c.tty) property.push({ code: 'tty', valueString: c.tty });
   if (c.active !== undefined) property.push({ code: 'status', valueString: c.active ? 'active' : 'inactive' });
@@ -213,6 +244,9 @@ resultsBody.addEventListener('click', (e) => {
   const row = (e.target as HTMLElement).closest('tr[data-code]') as HTMLElement | null;
   if (row?.dataset.code) showPropertiesModal(row.dataset.code);
 });
+
+// Generate compose examples from data-vcl-compose attributes
+hydrateExpressionSnippets(document);
 
 // Generate compose examples from data-vcl-compose attributes
 document.querySelectorAll<HTMLElement>('[data-vcl-compose]').forEach(el => {
