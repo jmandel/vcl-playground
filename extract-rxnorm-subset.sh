@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Extract a pain-management-focused subset of RxNorm for the VCL tutorial.
 # Outputs rxnorm-subset.json with concepts, edges, and literal properties.
-# Includes up to 5 alternate designations per concept as literal property
-# "designation" to support queries like designation/"ibuprofen".
+# Includes alternate designations per concept from term strings (including
+# synonym and TallMan variants) as literal property "designation" to support
+# queries like designation/"ibuprofen".
 #
 # Usage: ./extract-rxnorm-subset.sh [path-to-rxnorm.db]
 # Default DB: ~/hobby/FHIRsmith/data/terminology-cache/rxnorm_02022026.db
@@ -107,23 +108,18 @@ WITH
     UNION SELECT concept_id FROM pins
     UNION SELECT concept_id FROM scdfs
   ),
-  designation_candidates(concept_id, value, preferred, designation_id) AS (
-    SELECT d.concept_id, d.value, COALESCE(d.preferred, 0), d.designation_id
-    FROM designation d
-    JOIN all_ids ai ON ai.concept_id = d.concept_id
-    WHERE d.active = 1
-      AND d.value IS NOT NULL
-      AND TRIM(d.value) <> ''
+  designation_candidates(concept_id, value) AS (
+    SELECT t.concept_id, t.text AS value
+    FROM term_fts t
+    JOIN all_ids ai ON ai.concept_id = t.concept_id
+    WHERE t.lang = 'en'
+      AND t.text IS NOT NULL
+      AND TRIM(t.text) <> ''
   ),
-  designation_distinct(concept_id, value, preferred, designation_id) AS (
-    SELECT concept_id, value, MAX(preferred) AS preferred, MIN(designation_id) AS designation_id
+  designation_distinct(concept_id, value) AS (
+    SELECT concept_id, value
     FROM designation_candidates
     GROUP BY concept_id, value
-  ),
-  designation_ranked(concept_id, value, rn) AS (
-    SELECT concept_id, value,
-           ROW_NUMBER() OVER (PARTITION BY concept_id ORDER BY preferred DESC, designation_id ASC) AS rn
-    FROM designation_distinct
   )
 SELECT json_object(
   'system', 'http://www.nlm.nih.gov/research/umls/rxnorm',
@@ -170,10 +166,9 @@ SELECT json_object(
                          'RXN_HUMAN_DRUG', 'RXN_BN_CARDINALITY', 'RXN_QUANTITY',
                          'RXN_IN_EXPRESSED_FLAG', 'RXN_VET_DRUG')
       UNION ALL
-      SELECT c.code AS code, 'designation' AS property, dr.value AS value
-      FROM designation_ranked dr
-      JOIN concept c ON c.concept_id = dr.concept_id
-      WHERE dr.rn <= 5
+      SELECT c.code AS code, 'designation' AS property, dd.value AS value
+      FROM designation_distinct dd
+      JOIN concept c ON c.concept_id = dd.concept_id
     ) lit
   )
 );
