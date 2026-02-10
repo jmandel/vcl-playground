@@ -169,6 +169,7 @@ function conceptJson(code: string): string {
     literals
       .filter((l: any) => l.property === 'designation' && l.value)
       .map((l: any) => l.value)
+      .filter((value: string) => value !== c.display)
   )].sort((a: string, b: string) => a.localeCompare(b));
   concept.designation = designationValues.map((value: string) => ({ value }));
   const property: any[] = [];

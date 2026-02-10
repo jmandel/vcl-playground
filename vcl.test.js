@@ -404,7 +404,7 @@ describe('regex built-in concept fields', () => {
     expect(result.size).toBeGreaterThan(0);
   });
 
-  test('designation regex applies to extracted designation literals', () => {
+  test('designation regex applies to designation labels', () => {
     const result = evaluate(parseVCL('designation/"[Ii]buprofen"'));
     expect(result.size).toBeGreaterThan(0);
   });
@@ -415,6 +415,34 @@ describe('regex built-in concept fields', () => {
     const expr = `designation=${JSON.stringify(sample.value)}`;
     const result = evaluate(parseVCL(expr));
     expect(result.has(sample.code)).toBeTrue();
+  });
+
+  test('designation search includes display values', () => {
+    const result = evaluate(parseVCL('designation="ibuprofen"'));
+    expect(result.has('5640')).toBeTrue();
+  });
+
+  test('designation regex search includes display values', () => {
+    const result = evaluate(parseVCL('designation/"^ibuprofen$"'));
+    expect(result.has('5640')).toBeTrue();
+  });
+
+  test('designation literals exclude exact display duplicates', () => {
+    const displayByCode = new Map(data.concepts.map((c) => [c.code, c.display]));
+    const duplicate = data.literals.find(
+      (l) => l.property === 'designation' && displayByCode.get(l.code) === l.value
+    );
+    expect(duplicate).toBeUndefined();
+  });
+
+  test('designation literals are capped at 5 per concept', () => {
+    const counts = new Map();
+    for (const l of data.literals) {
+      if (l.property !== 'designation') continue;
+      counts.set(l.code, (counts.get(l.code) || 0) + 1);
+    }
+    const maxPerConcept = Math.max(0, ...counts.values());
+    expect(maxPerConcept).toBeLessThanOrEqual(5);
   });
 });
 

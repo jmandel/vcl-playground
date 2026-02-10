@@ -578,6 +578,16 @@ function createEvaluator(DB, options) {
     return String(candidate) === String(literal.value);
   }
 
+  function designationValuesForCode(code) {
+    const values = new Set();
+    const concept = DB.byCode.get(code);
+    if (concept && concept.display) values.add(concept.display);
+    for (const l of (DB.literalsByCode.get(code) || [])) {
+      if (l.property === 'designation' && l.value) values.add(l.value);
+    }
+    return values;
+  }
+
   function evalFilter(ast) {
     const {property, op, value} = ast;
     const results = new Set();
@@ -585,6 +595,13 @@ function createEvaluator(DB, options) {
     if (op === '=') {
       const target = toLiteral(value);
       for (const code of DB.allCodes) {
+        if (property === 'designation') {
+          const values = designationValuesForCode(code);
+          for (const v of values) {
+            if (literalMatches(v, target)) { results.add(code); break; }
+          }
+          continue;
+        }
         const edges = DB.edgesBySource.get(code) || [];
         for (const e of edges) {
           if (e.property === property && literalMatches(e.target, target)) { results.add(code); break; }
@@ -618,11 +635,18 @@ function createEvaluator(DB, options) {
       try { re = new RegExp(value); } catch(e) { return results; }
       for (const code of DB.allCodes) {
         // Built-in concept fields: code/display are matched directly on the concept record.
-        // Designations are handled below as regular literal properties.
+        // designation matches against display + designation literal values.
         if (property === 'code' || property === 'display') {
           const c = DB.byCode.get(code);
           const testVal = property === 'code' ? c.code : c.display;
           if (testVal && re.test(testVal)) results.add(code);
+          continue;
+        }
+        if (property === 'designation') {
+          const values = designationValuesForCode(code);
+          for (const v of values) {
+            if (re.test(v)) { results.add(code); break; }
+          }
           continue;
         }
         const lits = DB.literalsByCode.get(code) || [];
@@ -651,6 +675,15 @@ function createEvaluator(DB, options) {
       }
 
       for (const code of DB.allCodes) {
+        if (property === 'designation') {
+          const values = designationValuesForCode(code);
+          let found = false;
+          for (const v of values) {
+            if (matchSet.has(v)) { found = true; break; }
+          }
+          if (op === 'in' ? found : !found) results.add(code);
+          continue;
+        }
         const edges = DB.edgesBySource.get(code) || [];
         let found = false;
         for (const e of edges) {

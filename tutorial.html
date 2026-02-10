@@ -457,7 +457,7 @@ nav a:hover { color: var(--accent); }
   <p><code>code</code> and <code>display</code> are built-in concept fields in this prototype, so regex can target them directly:</p>
   <pre><code data-vcl-expr-key="regex-code-fragment"></code></pre>
   <p><em>Concepts whose code contains "204" (for example <code>104906</code>).</em></p>
-  <p>Alternate labels are available via the <code>designation</code> property from RxNorm term strings (including synonyms and TallMan variants):</p>
+  <p><code>designation</code> queries match concept display plus alternate labels from RxNorm term strings (including synonyms and TallMan variants). This bundled dataset keeps up to 5 alternate labels per concept:</p>
   <pre><code data-vcl-expr-key="regex-designation"></code></pre>
   <p><em>Concepts with any designation label matching ibuprofen.</em></p>
   <p><code>?</code> tests whether a property has any value at all:</p>
@@ -573,7 +573,7 @@ nav a:hover { color: var(--accent); }
 </table>
 <p><strong>Hierarchy note:</strong> <code>&lt;&lt;</code>, <code>&lt;</code>, <code>&gt;&gt;</code>, <code>&lt;!</code>, and <code>!!&lt;</code> operate over the named property. Use <code>concept</code> for code hierarchy (for example <code>concept&lt;&lt;369097</code>). In this RxNorm prototype, <code>concept</code> hierarchy is backed by <code>isa</code> edges.</p>
 <p><strong>Hierarchy rhs rule:</strong> for <code>&lt;&lt;</code>, <code>&lt;</code>, <code>~&lt;&lt;</code>, <code>&gt;&gt;</code>, <code>&lt;!</code>, and <code>!!&lt;</code>, the right-hand side is a single <code>codeLiteral</code> (not a <code>setExpr</code>).</p>
-<p><strong>Regex note:</strong> for this prototype, <code>code</code> and <code>display</code> are built-in concept fields available on the regex lhs (for example <code>code/"204"</code> and <code>display/"minophen"</code>). <code>designation</code> supports matching alternate labels from term strings (for example <code>designation/"[Ii]buprofen"</code>).</p>
+<p><strong>Regex note:</strong> for this prototype, <code>code</code> and <code>display</code> are built-in concept fields available on the regex lhs (for example <code>code/"204"</code> and <code>display/"minophen"</code>). <code>designation</code> regex matches display plus alternate labels from term strings (for example <code>designation/"[Ii]buprofen"</code>).</p>
 <p><strong>Property lhs rule:</strong> filter operators bind to a property path only: <code>code(.code)*</code>. Grouped expressions are set expressions and cannot appear on the left of filter operators (for example <code>(A;B)&lt;&lt;201</code> is invalid).</p>
 <p><strong>Star hierarchy shorthand:</strong> <code>*&lt;&lt;X</code> is shorthand for <code>concept&lt;&lt;X</code> (and similarly for <code>&lt;</code>, <code>&gt;&gt;</code>, <code>&lt;!</code>, <code>!!&lt;</code>, <code>~&lt;&lt;</code>).</p>
 <p>Set operators: <code>,</code> (AND/intersection), <code>;</code> (OR/union), <code>-</code> (exclusion/minus).</p>
