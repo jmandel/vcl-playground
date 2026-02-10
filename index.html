@@ -376,29 +376,27 @@ h2 .anchor-link:hover, h3 .anchor-link:hover { color: var(--accent); }
   <a class="try-link" href="tutorial.html#example=in-code-list">Try it</a>
 </p>
 
-<h4>A nested expression</h4>
+<h4>Path Traversal</h4>
 <p>
-  A parenthesized expression using standard VCL operators. This enables <strong>graph traversal through
-  intermediate nodes</strong>: the property must point to a concept that itself matches
-  the nested expression.
+  You can write the same path-traversal query in two styles: nested form (<code>^</code>) or dotted form (<code>.</code>).
 </p>
 <p>Example (multi-hop):</p>
 <div class="side-by-side">
   <div>
-    <h4>Nested <code>in</code> Form</h4>
+    <h4>Nested Form</h4>
     <pre><code data-vcl-expr-key="multihop-in-nested"></code></pre>
   </div>
   <div>
-    <h4>Dotted Path Form</h4>
+    <h4>Dotted Form</h4>
     <pre><code data-vcl-expr-key="multihop-in-dotted"></code></pre>
   </div>
 </div>
 <p>
-  Both forms are equivalent and return the same set.
+  Same query, two styles.
   Rewrite rule: <code>a.b OP x</code> is equivalent to <code>a^(b OP x)</code>; multi-hop extends recursively, so
   <code>a.b.c OP x</code> is equivalent to <code>a^(b^(c OP x))</code>.
 </p>
-<p>Use this rewrite whenever you want to express the same traversal in either nested-<code>in</code> form or dotted-path form.</p>
+<p>Use whichever style is clearer for your use case.</p>
 
 <h4>A ValueSet URI</h4>
 <pre><code data-vcl-expr-key="in-vs-uri-controlled-substances"></code></pre>
