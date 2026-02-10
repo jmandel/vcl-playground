@@ -518,7 +518,8 @@ h2 .anchor-link:hover, h3 .anchor-link:hover { color: var(--accent); }
     <td><code>regex</code></td><td><code>/</code></td>
     <td><code>prop / "pattern"</code></td>
     <td>Property value matches the specified regular expression. The pattern <strong>MUST</strong>
-      be a quoted string.</td>
+      be a quoted string. In this prototype, <code>code</code> and <code>display</code> are built-in concept
+      fields and may be used as <code>prop</code> (for example <code>code/"204"</code>).</td>
   </tr>
   <tr>
     <td><code>exists</code></td><td><code>?</code></td>
@@ -534,6 +535,7 @@ h2 .anchor-link:hover, h3 .anchor-link:hover { color: var(--accent); }
 </tr>
 </table>
 <p><strong>Hierarchy note:</strong> <code>&lt;&lt;</code>, <code>&lt;</code>, <code>&gt;&gt;</code>, <code>&lt;!</code>, and <code>!!&lt;</code> operate over the named property. Use <code>concept</code> for code hierarchy (for example <code>concept&lt;&lt;369097</code>). In this RxNorm prototype, <code>concept</code> hierarchy is backed by <code>isa</code> edges.</p>
+<p><strong>Regex note:</strong> <code>code/"..."</code> matches concept identifiers and <code>display/"..."</code> matches concept display text. Other property names apply regex to that property's values.</p>
 <p><strong>Property lhs rule:</strong> filter operators bind to a property path only: <code>code(.code)*</code>. Grouped expressions are set expressions and cannot appear on the left of filter operators (for example <code>(A;B)&lt;&lt;201</code> is invalid).</p>
 <p><strong>Star hierarchy shorthand:</strong> <code>*&lt;&lt;X</code> is shorthand for <code>concept&lt;&lt;X</code> (similarly for <code>&lt;</code>, <code>&gt;&gt;</code>, <code>&lt;!</code>, <code>!!&lt;</code>, <code>~&lt;&lt;</code>).</p>
 

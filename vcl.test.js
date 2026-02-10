@@ -392,6 +392,19 @@ describe('dotted path semantics', () => {
   });
 });
 
+describe('regex built-in concept fields', () => {
+  test('code regex applies to concept code identifiers', () => {
+    const regexSet = evaluate(parseVCL('code/"^161$"'));
+    const literalSet = evaluate(parseVCL('161'));
+    expect(regexSet).toEqual(literalSet);
+  });
+
+  test('display regex applies to concept display text', () => {
+    const result = evaluate(parseVCL('display/"acetaminophen"'));
+    expect(result.size).toBeGreaterThan(0);
+  });
+});
+
 describe('concept hierarchy alias semantics', () => {
   test('concept is-a matches isa is-a in RxNorm prototype', () => {
     const conceptAst = parseVCL('concept<<369097');

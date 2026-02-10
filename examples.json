@@ -95,6 +95,10 @@
     "label": "display/\".*minophen.*\",TTY=SCD",
     "expr": "display/\".*minophen.*\",TTY=SCD"
   },
+  "regex-code-fragment": {
+    "label": "code/\"204\"",
+    "expr": "code/\"204\""
+  },
   "code-list": {
     "label": "(161;5640)",
     "expr": "(161;5640)"

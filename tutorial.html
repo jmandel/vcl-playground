@@ -454,10 +454,14 @@ nav a:hover { color: var(--accent); }
   <p><em>Concepts whose strength contains "500".</em> Combine with other filters to narrow down:</p>
   <pre><code data-vcl-expr-key="regex-display"></code></pre>
   <p><em>All SCDs whose display name matches "minophen" (acetaminophen, etc.).</em></p>
+  <p><code>code</code> and <code>display</code> are built-in concept fields in this prototype, so regex can target them directly:</p>
+  <pre><code data-vcl-expr-key="regex-code-fragment"></code></pre>
+  <p><em>Concepts whose code contains "204" (for example <code>104906</code>).</em></p>
   <p><code>?</code> tests whether a property has any value at all:</p>
   <pre><code data-vcl-expr-key="exists-tradename"></code></pre>
   <p><em>Concepts that have at least one tradename (i.e., generic drugs with branded versions).</em></p>
   <div class="try-it">
+    <button class="try-btn" onclick="tryExample('regex-code-fragment')">Try: code regex</button>
     <button class="try-btn" onclick="tryExample('regex-display')">Try: display regex</button>
     <button class="try-btn" onclick="tryExample('regex-strength')">Try: strength regex</button>
     <button class="try-btn" onclick="tryExample('exists-tradename')">Try: has_tradename?bool:true</button>
@@ -563,6 +567,7 @@ nav a:hover { color: var(--accent); }
 <tr><td>of</td><td><code>.</code></td><td><code>val.prop</code></td><td><code class="vcl-try" data-example="of-tradename"></code></td><td>Navigate property from value</td></tr>
 </table>
 <p><strong>Hierarchy note:</strong> <code>&lt;&lt;</code>, <code>&lt;</code>, <code>&gt;&gt;</code>, <code>&lt;!</code>, and <code>!!&lt;</code> operate over the named property. Use <code>concept</code> for code hierarchy (for example <code>concept&lt;&lt;369097</code>). In this RxNorm prototype, <code>concept</code> hierarchy is backed by <code>isa</code> edges.</p>
+<p><strong>Regex note:</strong> for this prototype, <code>code</code> and <code>display</code> are built-in concept fields available on the regex lhs (for example <code>code/"204"</code> and <code>display/"minophen"</code>).</p>
 <p><strong>Property lhs rule:</strong> filter operators bind to a property path only: <code>code(.code)*</code>. Grouped expressions are set expressions and cannot appear on the left of filter operators (for example <code>(A;B)&lt;&lt;201</code> is invalid).</p>
 <p><strong>Star hierarchy shorthand:</strong> <code>*&lt;&lt;X</code> is shorthand for <code>concept&lt;&lt;X</code> (and similarly for <code>&lt;</code>, <code>&gt;&gt;</code>, <code>&lt;!</code>, <code>!!&lt;</code>, <code>~&lt;&lt;</code>).</p>
 <p>Set operators: <code>,</code> (AND/intersection), <code>;</code> (OR/union), <code>-</code> (exclusion/minus).</p>
